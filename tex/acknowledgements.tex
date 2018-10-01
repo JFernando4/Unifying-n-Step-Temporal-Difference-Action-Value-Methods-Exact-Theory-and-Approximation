@@ -1,0 +1,22 @@
+% A workaround to allow relative paths in included subfiles
+% that are to be compiled separately
+% See https://tex.stackexchange.com/questions/153312/subfiles-inside-a-subfile-using-relative-paths
+\providecommand{\main}{..}
+% \documentclass[\main/thesis.tex]{subfiles}
+
+\begin{document}
+
+% environment for acknowledgements.
+\begin{acknowledgements} 
+
+First and foremost, I would like to thank my supervisor Richard Sutton for his guidance and advice.
+Over the last two years, he has always provided good judgment and advice on research, writing, and life in general.
+Second, I would like to thank my co-authors Kris De Asis and Zach G. Holland for helping me get my career as a researcher started.
+Kris was responsible for the $19$-state random walk experiment and Zach worked on the stochastic windy gridworld experiment.
+However, beyond their collaboration on our paper, they have always provided a good source of support and discussion that have led to many new ideas and projects.
+Third, I would like to thank Huizhen Yu for helping me verify my proofs and being such a good source of intuitive understanding of core reinforcement learning ideas.
+Finally, I would like to thank the reinforcement learning and artificial intelligence lab for being there to support me and help me at every step of my master's degree.
+
+\end{acknowledgements}
+
+\end{document}

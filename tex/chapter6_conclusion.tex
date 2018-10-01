@@ -1,0 +1,96 @@
+% A workaround to allow relative paths in included subfiles
+% that are to be compiled separately
+% See https://tex.stackexchange.com/questions/153312/subfiles-inside-a-subfile-using-relative-paths
+\providecommand{\main}{..}
+% \documentclass[\main/thesis.tex]{subfiles}
+
+\onlyinsubfile{\externaldocument{\main/tex/introduction}}
+
+\begin{document}
+
+\chapter{Conclusion}
+\label{ch6:conclusion}
+
+The main contribution of this work is the in-depth introduction of the $n$-step $Q(\sigma)$ algorithm, which was first proposed in \citeauthor{precup2000} (\citeyear{precup2000}) and first formulated in \citeauthor{sutton2018} (\citeyear{sutton2018}). 
+Through the introduction of the parameter $\sigma$, we have gained the capability of representing a wide family of algorithms opening up another dimension in the space of algorithms that can be studied and implemented.
+Moreover, we have demonstrated how the $n$-step $Q(\sigma)$ algorithm can be used to represent the $n$-step algorithms Sarsa and tree backup, effectively unifying them under the same family of algorithms.
+We have also presented extensions of the $n$-step $Q(\sigma)$ algorithm to the continuing case with both, linear and non-linear function approximation.
+In the linear case, we presented how to use $n$-step $Q(\sigma)$ in combination with the tile coding feature representation.
+In the non-linear case, we presented an extension of DQN to use the TD error of $n$-step $Q(\sigma)$ as loss function.
+We have called the resulting network architecture the deep $Q(\sigma)$ network.
+These two extensions increase the applicability of the $n$-step $Q(\sigma)$ algorithm to more complex environments and tasks.
+
+The second contribution of this work is the study of the convergence of the $n$-step $Q(\sigma)$ algorithm.
+We limited our study to the two special cases in order to facilitate our analysis.
+In the off-policy prediction setting, we demonstrated the convergence of $n$-step $Q(\sigma)$ in the first-visit and off-line case.
+This result proved that the intuition of \citeauthor{precup2000} (\citeyear{precup2000}) was true: the combination of per-decision importance sampling and tree backup inherits their convergence guarantees.
+This provides evidence that further generalizations to the on-line and every-visit cases are possible.
+Moreover, we demonstrated the convergence of $1$-step $Q(\sigma)$ in the control setting.
+This shows that $Q(\sigma)$ can be used to  learn the action-values of optimal policies and that $1$-step $Q(\sigma)$ also inherits this convergence result from the algorithms that it unifies.
+We have also provided an example for using the parameter $\sigma$ to control and potentially reduce the bias in the estimate of the return. 
+
+The last contribution of this work is providing empirical evaluations of the $n$-step $Q(\sigma)$ algorithm.
+We started our evaluations in simple tasks that allowed us to gain a clear view of the performance of the $n$-step $Q(\sigma)$ algorithm.
+Then, we investigated if similar effects to the ones found in simpler tasks could be found under more complex circumstances.
+We found that many of the effects found in the simpler tasks carry over to more complex tasks.
+In a prediction task in the 19-step random walk environment we showed that higher values of the parameter $\sigma$ resulted in better initial performance, while smaller values resulted in better final performance.
+We also found that by decaying $\sigma$ over time from one to zero the resulting algorithm benefits from the early performance induced by a high value of $\sigma$ and the final performance corresponding to small values of $\sigma$ --- we named this algorithm decaying $\sigma$.
+In a tabular control task, we demonstrated that algorithms with intermediate values of $\sigma$ and with decaying $\sigma$ are capable of outperforming either of the extremes.
+In the mountain cliff environment --- a variant of mountain car --- we demonstrated that the effects found in the tabular case also carry over --- to some extend --- to the continuing case with linear function approximation.
+In this environment we found that the decaying $\sigma$ algorithm performed the best.
+However, the effect of the parameter $\sigma$ was not exactly the same as before: smaller values of $\sigma$ resulted in better final performance, but larger values of $\sigma$ not always improved the initial performance.
+In fact, the value of $\sigma$ that resulted in the best initial performance was $0.5$. 
+In our last empirical evaluation we tested the deep $Q(\sigma)$ network --- a combination of $n$-step $Q(\sigma)$ and DQN --- in the mountain car environment.
+We provided an extensive study on how particular algorithmic details of DQN and the parameter $n$ influence the performance of the deep $Q(\sigma)$ network.
+We found similar effects as in the previous experiments.
+We found that a variant of the decaying $\sigma$ algorithm with linear decay performed the best.
+In this task, we found that the parameter $\sigma$ had the inverse effect as in the previous experiment: larger values of $\sigma$ resulted in better initial performance, but smaller values not always resulted in better final performance.
+The value of $\sigma$ the performed the best during late training was $0.5$.
+
+This work provides strong support for using $n$-step $Q(\sigma)$ over the $n$-step algorithms Sarsa and tree backup.
+$n$-step $Q(\sigma)$ inherits the convergence guarantees of $n$-step Sarsa and tree backup in the two special cases that we studied.
+Moreover, our experiments demonstrated that the performance of the decaying $\sigma$ algorithm is robust to the learning problem, the type of environment, and the type of representation used for the action-value function.
+The main benefit of using $n$-step $Q(\sigma)$ is that it provides a flexible framework that can be adapted to a wide range of learning tasks in order to achieve better performance.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%     Future Work      %%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Future Work}
+
+Since its introduction in \citeauthor{sutton2018} (\citeyear{sutton2018}), several extensions have already been made to the $n$-step $Q(\sigma)$ algorithm.
+To our knowledge, \citeauthor{markus_dumke} (\citeyear{markus_dumke}) and \citeauthor{anna2017} (\citeyear{anna2017}) independently presented each an extension of the $n$-step $Q(\sigma)$ algorithm to use elgibility traces --- called $Q(\sigma, \lambda)$.
+Building upon \citeauthor{markus_dumke}'s (\citeyear{markus_dumke}) work, \citeauthor{long2018} (\citeyear{long2018}) presented a theoretical analysis on the $Q(\sigma, \lambda)$ algorithm proving its convergence in the on-line control case.
+\citeauthor{deasis_msc_thesis} (\citeyear{deasis_msc_thesis}) extended the $Q(\sigma, \lambda)$ to use control variates as in \citeauthor{deasis2018} (\citeyear{deasis2018}), and showed that in this case the Retrace($\lambda$) algorithm \parencite{remi_retrace} can be represented using $Q(\sigma, \lambda)$.
+Thus, there has already been a lot of work built upon the $n$-step $Q(\sigma)$ algorithm. 
+Nevertheless, three promising avenues of research remain unexplored: (1) extending the theoretical analysis of the $n$-step $Q(\sigma)$ algorithm to the linear function approximation case, (2) studying different ways to select the value of $\sigma$ on a per-decision basis, and (3) providing empirical evaluations of the deep $Q(\sigma)$ network in more complex environments.
+
+The main challenge in extending the theoretical analysis of $n$-step $Q(\sigma)$ to the linear function approximation case is avoiding the divergence issues often encountered when combining off-policy sampling, bootstrapping, and function approximation --- a problem that has been eloquently named the \textit{deadly triad} \parencite{sutton2018}.
+In this case, we would have to result to some form of gradient based method analogous to the ones introduced in \citeauthor{maei_gtd} (\citeyear{maei_gtd}) in order to circumvent the deadly triad.
+Fortunately, such analysis has already being done for the Tree Backup($\lambda$) algorithm \parencite{ahmed_treebackup} and the an algorithm analogous to Sarsa($\lambda$) \parencite{maei_gtd}.
+Therefore, it seems possible that an algorithm that combines both of those gradient based methods would also inherit their convergence guarantees.
+
+The second avenue of research is studying the different methods for selecting the parameter $\sigma$ on a per-decision basis.
+In chapter \ref{ch5:empirical_evaluation} we suggested that, similar to the ABQ($\zeta$) algorithm \parencite{rupam2017}, $\sigma$ could be selected in a way to counteract the negative effects that the importance sampling ratio has in the variance of the algorithm.
+Another approach would be to use some count-based method --- such as in \citeauthor{bellemare2016} (\citeyear{bellemare2016}) --- in order to select $\sigma$ based on how many times a state-action pair has been observed.
+The intuition behind this method is that more familiar state-action pair would have been visited more often and, consequently, would have more accurate action-value estimates.
+Thus, in this case selecting a value of $\sigma$ closer to zero would result in a less biased estimate of the return.
+In this case the count-based method would be a proxy for how good are the estimates of the action-value function.
+Alternatively, one could simply use the TD-error at each state-action pair.
+
+Finally, it would be valuable to the deep reinforcement learning community to replicate the analysis of the deep $Q(\sigma)$ network in a more complex environment such as the arcade learning environment \parencite{bellemare13arcade}.
+Even though the mountain car environment allowed for thorough study of the deep $Q(\sigma)$ network, it is possible that many of the effects that we observed there would not carry over to more complex environment.
+After all, the original DQN architecture was designed to work on pixel data which is high dimensional and lacks the topographical structure that we encounter in the mountain car environment.
+Thus, analyzing the performance of the deep $Q(\sigma)$ network in a more complex environment and finding similar effects to the ones found in mountain car would provide stronger support for the benefits of using $n$-step $Q(\sigma)$ with non-linear function approximation.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%     Summary       %%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Summary}
+
+We presented the $n$-step $Q(\sigma)$ algorithm that unifies the $n$-step algorithms Sarsa and tree backup.
+We provided extensions of $n$-step $Q(\sigma)$ algorithm to the off-policy case and the continuous case with linear and non-linear function approximation. 
+Furthermore, we showed the convergence of $n$-step $Q(\sigma)$ in two special cases: the off-policy prediction case in the first-visit and off-line setting and the on-policy control case.
+Because of the great flexibility that it provides, we were always able to find an instance of the $n$-step $Q(\sigma)$ algorithm that outperformed the $n$-step algorithms Sarsa and tree backup over a wide variety of settings and environments.
+The main benefit of using the $n$-step $Q(\sigma)$ algorithm is that it is capable to adapt to wide variety of learning tasks in order to achieve better performance. 
+
+\end{document}

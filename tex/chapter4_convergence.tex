@@ -1,0 +1,1280 @@
+\providecommand{\main}{..}
+% \documentclass[\main/thesis.tex]{subfiles}
+
+\begin{document}
+
+\chapter{Theoretical Analysis} \label{ch4:convergence}
+
+In this chapter, we provide theoretical analyses on the convergence of the $n$-step $Q(\sigma)$ algorithm --- the main subject of study of this thesis.
+% The goal of this section is to provide theoretical understanding of the special cases in which the estimates of the action-value function computed by the $Q(\sigma)$ algorithm converge to the true action-value function.
+% Studying the convergence of new algorithms is not a problem that is often approached in its full generality.
+% Instead, convergence is studied for a small subset of special cases that facilitate their theoretical understanding.
+% Eventually, new research is built upon existing proofs in order to extend and generalize the application of these algorithms.
+The main contribution of this chapter is to lay down the theoretical foundations of the theory of the $Q(\sigma)$ algorithm allowing for new research to be built upon these results.
+In order to pursue this goal, we will limit our study to two special cases of the $Q(\sigma)$ algorithm.
+Moreover, all our results will be limited to the tabular representation of action-value functions.
+
+In section (\ref{section:offpolicy_conv}), we will show the convergence for the $n$-step $Q(\sigma)$ algorithm in the \textit{off-policy prediction} case where the agent behaves according to a policy $\mu$, while estimating  the action-values corresponding to a stationary policy $\pi$.
+The proof is restricted to \textit{off-line} setting, where updates are computed only after simulating an entire episode; and to the \textit{first-visit} setting, where updates are only computed for the first occurrence of each unique state-action pair in the episode.
+In section (\ref{section:control_conv}), we provide a convergence proof for the one-step $Q(\sigma)$ algorithm in the \textit{on-policy} \textit{control} case where the agent's policy is a function of the current estimates of the action-values $Q_t$, which converge to optimal action values $q_*$ as time goes to infinity.
+
+%% present tense
+We will formulate the sequential decision problem as a Markov decision process (MDP) and we will adopt the notation established in chapter \ref{ch2:background}. % no need to say that
+% say if there isn't enough here, you can go back to chapter 2
+We let $s$ be an element of the state space $\mathcal{S}$, $a$ be an element of the action space $\mathcal{A}$, and $R(s,a)$ be an element of the set of all possible values of the reward signal $\mathcal{R} \subset \mathbb{R}$.
+Additionally, we let $S_t$ and $A_t$ be random variables representing the realization of the state and action at time $t$.
+Similarly, we let $R(S_t,A_t) = R_{t+1}$ be the realization of the reward at time $t+1$.
+
+$S_{t+1}$ and $R_{t+1}$ are modeled jointly with the transition dynamics probability function
+%
+\begin{equation}
+\label{eq:transition_dynamics}
+\mathbb{P}(s',r|s,a) \overset{.}{=} \mathbb{P}(S_{t+1} = s', R_{t+1} = r | S_t = s, A_t = a).
+\end{equation}
+%
+For ease of exposition, we have assumed that the reward function is discrete.
+Nevertheless, these results apply to both, continuous and discrete reward functions.
+We will define the expected reward with respect to the transition probability function as
+%
+\begin{equation}
+\label{eq:exp_reward}
+r(s,a) \overset{.}{=} \mathbb{E} \{R_{t+1} | S_t = s, A_t = a \}.
+% = 
+% 	\sum_{r \in \mathcal{R}} r \sum_{s' \in \mathcal{S}} \mathbb{P}(s', r | s,a) = 
+%     \sum_{r \in \mathcal{R}} r \mathbb{P}(r|s,a),
+\end{equation}
+Similarly, we will define the \textit{state-transition probability function} as
+%
+\begin{equation}
+\label{eq:state_transition}
+P^a_{ss'} \overset{.}{=} \mathbb{P} (S_{t+1} = s' | S_t = s, A_t = a ),
+% 	\overset{.}{=} \sum_{r \in \mathcal{R}} \mathbb{P} (s', r | s, a).
+\end{equation}
+%
+where $\mathbb{P} (S_{t+1} |S_t, A_t)$ is the marginal probability function of the next state given the current state-action pair.
+We will use the abbreviation $P^a_{ss'}$ for concreteness and only when doing so is not ambiguous. 
+
+Actions are selected according to a \textit{behaviour policy} $\mu$, which is a mapping from the state space to a probability distribution over the action space.  
+In the off-policy setting, the goal of action-value algorithms is to estimate the action-value function of the \textit{target policy} $\pi$, while behaving according to $\mu$.  
+For any policy $\nu$, we define $\nu(a|s)$ to be the probability of selecting action $a \in \mathcal{A}$ given state $s \in \mathcal{S}$.
+Moreover, we define $\mathbb{E}_{\nu}$ be the expectation operator with respect to policy $\nu$ and the transition dynamics probability function.
+
+We will let the history of the algorithm up until time $t$ be represented by the set
+%
+\begin{equation}
+\label{eq:history}
+\mathcal{F}_t = \{S_0, S_1, ..., S_t, A_0, A_1, ..., A_t, R_1, R_2, ..., R_{t} \},
+\end{equation}
+%
+where $\mathcal{F}_t$ is an increasing sequence in the sense that $\mathcal{F}_t \subset \mathcal{F}_{t+1}$.
+% We will assume that every random variable with subscript $t$ is completely determined by the history of the algorithm $\mathcal{F}_t$.
+Additionally, we may choose to add more information to this set, such as the learning rate parameter $\alpha_t(S_t,A_t)$.
+
+In order to prove convergence in the prediction case we need to show that the estimates computed by the $Q(\sigma)$ algorithm converge in the limit to the \textit{action-value function}
+%
+\begin{align}
+\label{eq:qpi}
+q_\pi(s,a) &\overset{.}{=} \mathbb{E}_{\pi}  
+	\Big\{ \sum_{k \geq 0} \gamma^k R(S_{t+k}, A_{t+k}) | S_t= s, A_t = a \Big\} \nonumber \\
+%% new line
+&= r(s,a) + \gamma \sum_{s' \in \mathcal{S}} P^a_{ss'} \sum_{a' \in \mathcal{A}} \pi(a'|s') 
+	q_\pi(s',a'),
+\end{align}
+%
+where $\gamma$ is a discount factor in the half closed interval $[0,1)$. 
+% Henceforth, we will omit the conditions inside the expectation when doing so is not ambiguous. 
+On the other hand, convergence in the control case implies that the $Q(\sigma)$ estimates converge in the limit to
+%
+\begin{align}
+\label{eq:qstar}
+q_*(s,a) &\overset{.}{=} \max_\pi q_\pi(s,a) \nonumber \\
+%
+&= r(s,a) + \gamma  \sum_{s' \in \mathcal{S}} P^a_{ss'} \max_{a'}q_*(s',a').
+\end{align}
+%
+Now we are ready to prove the convergence of the $Q(\sigma)$ algorithm for the two special cases mentioned above.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% Off-Line Off-Policy Convergence %%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Convergence of the Off-Policy $n$-Step Q($\boldsymbol{\sigma}$) Algorithm}
+\label{section:offpolicy_conv} 
+
+In this section, we will show the convergence of the off-policy $n$-step $Q(\sigma)$ algorithm in the off-line and first-visit setting.
+This version of the algorithm does not compute updates every time the agent and the environment interact. 
+Instead, an initial state and action pair is selected from $\mathcal{S} \times \mathcal{A}$ and a trajectory is generated until the episode terminates.
+After generating a trajectory, an update is computed for the first occurrence of each unique state-action pair in the trajectory.
+We will assume that the reward function is bounded by some constant $R_M$, that the state and action spaces are finite, and that there is a zero-reward self-absorbing state in the MDP --- otherwise known as terminal state.
+As mentioned in the beginning of this chapter, we limit our study to the tabular case.
+Given this conditions, we will show that as long as an infinite number of updates are computed for every state-action pair in $\mathcal{S} \times \mathcal{A}$, the estimates computed by the off-policy $n$-step $Q(\sigma)$ algorithm will converge to $q_\pi$ with probability one.
+
+Before diving in into the main result of this section let us define new and adapt some of the old notation.
+Henceforth, we will let $t \geq 0$ be the time step of the algorithm.
+We will add another subscript to states, actions, and rewards to indicate their position inside of a trajectory that was observed at time $t$.
+We will let a trajectory observed at time $t$ that starts at a state-action pair $(S_{t,0}, A_{t,0})$ be denoted $\tau_{t} (S_{t,0}, A_{t,0})$.
+The first subscript of each transition indicates the time step of the algorithm, whereas the second one indicates the position of a transition inside of the trajectory.
+
+Specifically, the trajectory is a set of the form
+%
+\begin{equation}
+\label{eq:trajectory}
+\tau_t(S_{t,0}, A_{t,0}) = \{(S_{t,0}, A_{t,0}, R_{t,0}), (S_{t,1}, A_{t,1}, R_{t,1}), ..., (S_{t,T}, A_{t, T}, R_{t, T}) \}, \ t \geq 1
+\end{equation}
+%
+where $T$ is the time of termination and $R_{t,0}$ is defined to be zero for all time steps $t$.
+We will assume $S_{t,0}$ is sampled arbitrarily from $\mathcal{S}$, actions are sampled according to the behaviour policy $\mu$, and for $T \geq k \geq 1$ state-reward pairs $(S_{t,k}, R_{t,k})$ for $T \geq k \geq 1$ are sampled according to the transition dynamics.
+
+We will define the history of the algorithm at time $t \geq 0$ to be the set $\mathcal{F}_t$ containing all the trajectories up until time $t$ and the initial action-values $Q_0$.
+We designed this definition in order to allow $Q_t$ to be $\mathcal{F}_t$-measurable.
+However, $\tau_t$ is only defined for $t \geq 1$.
+Hence, without loss of generality we will defined $\tau_0$ to be the empty set and let $Q_0$ be equal to zero --- we can always shift $Q_0$ by some vector of constant values.
+
+In order to simplify the notation, we will omit the time subscript from all the actions, states, and rewards.
+We will leave the time subscript in the trajectory $\tau_t$ to emphasize the fact that trajectories are simulated at time $t$ in order to compute the update.
+Hence, each of the tuples in $\tau_t(S_{0},A_{0})$ has the form $(S_{k}, A_{k}, R_{k})$ for $ T \geq k \geq 0$.
+We do not consider $R_{0}$ as parameter for the trajectory since it is not necessary for simulating the trajectory --- in fact it will never used in the update.
+
+We will let the parameter $\sigma$ depend on the the state $S_{k}$, and denote it as $\sigma_{k} = \sigma(S_{k})$.
+Moreover, we will always assume $\sigma_k \in [0,1]$.
+Finally, we will assume that the backup length parameter $n$ is finite.
+
+With this notation, we can now define recursively the $n$-step estimate of the return used by the off-policy $n$-step $Q(\sigma)$ algorithm as
+%
+\begin{align}
+\label{eq:recursive_return}
+\hat{G}_{t, 0:n}(S_k, A_k) &\overset{.}{=}  R_{k+1} \nonumber 
++ \gamma(1-\sigma_{k+1})\sum_{a \in \mathcal{A}} \mathbb{I}\{a \neq A_{k+1}\} 
+	\pi(a|S_{k+1})Q_t(S_{k+1}, a) \nonumber \\
+&+ \gamma\big[\sigma_{k+1} \rho_{k+1} + (1-\sigma_{k+1}) \pi(A_{k+1}|S_{k+1})\big] \hat{G}_{t, 1:n} (S_{k+1}, A_{k+1}), \nonumber \\
+%
+\hat{G}_{t, n:n}(S_{k+n}, A_{k+n}) &\overset{.}{=} 
+	Q_t(S_{k+n}, A_{k+n}), \ T \geq k \geq 0,
+\end{align}
+%
+where $\rho_k$ is the importance sampling ratio $\frac{\pi(A_k|S_k)}{\mu(A_k|S_k)}$, $Q_t$ is the current estimate of the action-value function, and $\mathbb{I}\{ \cdot \}$ is an indicator variable equal to one if the statement in brackets is true and zero otherwise. 
+Additionally, we assume that $R_{k+1}$ and $Q_t(S_k, A_k)$ are zero for all $j \geq T$.
+
+We will denote as $\mathcal{I}_{t+1}$ the set of indexes of the first occurrence of each unique state-action pair in the the trajectory $\tau_{t+1}$. 
+Given this notation, we define the update of the off-policy $n$-step $Q(\sigma)$ algorithm in the off-line and first-visit settings as
+%
+\begin{align}
+\label{eq:nstep_update}
+Q_{t+1}(S_i, A_i) &\overset{.}{=} (1-\alpha_t(S_i, A_{i})) Q_{t}(S_{i}, A_{i}) + 
+	\alpha_t(S_{i}, A_{i}) \hat{G}_{t, 0:n}(S_{i}, A_{i})
+    \ \forall \ i \in \mathcal{I}_{t+1}, \nonumber \\
+Q_{t+1}(S', A') &\overset{.}{=} Q_t(S', A') \ \forall \ (S', A') \not\in \tau_{t+1}(S_0, A_0),
+\end{align}
+%
+where $\alpha_t(S_i,A_i)$ is nonnegative learning rate parameter in the half-closed interval $(0,1]$.
+Additionally, we will extend the history by storing $\alpha_t$ at every time step and we will allow $\alpha_t$ to be a function of the past.
+
+Note that $i \in \mathcal{I}_{t+1}$ implies $(S_i, A_i) \in \tau_{t+1}(S_0, A_0)$. 
+Moreover, this update is equivalent to setting the learning rate $\alpha_t$ to zero if the corresponding state-action pair is not in the trajectory $\tau_{t+1}$.
+Hence, the update is applied for all the state-action pairs, but only those who appeared in the trajectory $\tau_{t+1}$ will have their estimate of the action-value function changed.
+
+Using the extended history $\mathcal{F}_t$ we define the operator
+%
+\begin{align}
+\label{eq:qsigma_op}
+(\Sigma^n_t Q_t)(S_i, A_i) &\overset{.}{=} \mathbb{E}_\mu \{ \hat{G}_{t, 0,n} 
+	(S_i, A_i) | \mathcal{F}_t \} \nonumber \\
+%
+&= \mathbb{E}_{\mu} \Big\{ \sum_{k=i}^{i+n-1} \gamma^{k-i}  
+	\big(\prod_{s=i+1}^{k} C_{k}\big) \big[R_{k+1} \nonumber  \\
+& \hspace{30pt} +\gamma (1-\sigma_{k+1}) 
+	\sum_{a\in\mathcal{A}}\mathbb{I}\{a \neq A_{k+1}\} 	
+	\pi(a|S_{k+1}) Q_t(S_{k+1},a) \big] \nonumber \\
+& \hspace{30pt} +\gamma^n \big(\prod_{s=i+1}^{i+n} C_{k}\big) Q_t(S_{i+n}, A_{i+n}) | \mathcal{F}_t \Big\}
+\end{align}
+%
+where $C_{k} = \sigma_{k} \rho_k + (1-\sigma_{k}) \pi(A_k|S_k)$.
+The second line is another way of writing th estimate of the return that will be useful in some parts of the proof.
+
+We are now ready to start the proof of convergence of the off-policy $n$-step $Q(\sigma)$ algorithm in the off-line and first-visit setting. 
+Before we state the main theorem, let us list the necessary assumptions:
+%
+\begin{enumerate}
+%% item 1: robins monro
+\item $\alpha_t(s,a) \geq 0$, $\sum^\infty_{t=1} \alpha_t(s,a) = \infty$, 
+	and $\sum^\infty_{t=1} \alpha^2_t(s,a) < \infty \ \forall \ (s,a) \in \mathcal{S}\times
+    \mathcal{A}$  with probability one.
+%% item 2: well defined behaviour policy
+\item $\mu(a|s) > 0 \ \forall \ (s,a) \in \mathcal{S}\times\mathcal{A}$. Moreover, the behaviour policy is guaranteed to reach the terminal state within a finite time.
+\end{enumerate}
+
+Assumption (1) are the standard Robbins-Monro conditions for stochastic approximation algorithms.
+Assumption (2) guarantees that all state-action pairs are observed an infinite amount of times, which is necessary in order to fulfill assumption (1).
+Additionally, assumption (2) makes the importance sampling ratio well defined and makes episodes have finite length. 
+We will impose both assumptions to all the proofs presented in this section.
+Under this condition, we can show that the following theorem is true.
+
+\begin{theorem}
+Let the update function of the off-policy $n$-step $Q(\sigma)$ algorithm in the off-line and first visit setting be defined as in equation (\ref{eq:nstep_update}), and let assumptions (1) and (2) hold. 
+Then, for all state-action pairs in $\mathcal{S} \times \mathcal{A}$ the estimate of the action-value function converge to the true action-value function $q_\pi$ with probability 1.
+\end{theorem}
+
+The proof of the theorem is an application of proposition 4.5 of \citeauthor{Bertsekas:1996:NP:560669} (\citeyear{Bertsekas:1996:NP:560669}) for the convergence of stochastic approximation algorithms.
+These results are an extension to the results in \citeauthor{Tsitsiklis1994} (\citeyear{Tsitsiklis1994}). 
+For completeness, we now present the statement and assumptions of proposition 4.5.
+Note that we have changed the notation used for the learning rate parameter and the states to match our notation.
+
+\newtheorem*{proposition4.5*}{Proposition 4.5}
+\begin{proposition4.5*}
+Let $r_t$ be the sequence generated by the iteration
+\begin{equation}
+\label{eq:prop_update}
+r_{t+1}(s) = (1 - \alpha_t(s)) r_t(s) + \alpha_t(i)\big( (H_t r_t) (s) + w_t(s) + u_t(s)  \big), \ \forall \ s \in \mathcal{S}, \ t \geq 0, 
+\end{equation}
+where $\alpha_t$ and the mapping $H_t$ are completely dependent on the history of the algorithm $\mathcal{F}_t$. 
+We assume the following.
+
+\begin{enumerate}
+    \item The stepsizes $\alpha_t(s)$ are nonnegative and with probability one
+\begin{equation*}
+\sum^\infty_{t=0} \alpha_t(s) = \infty, \hspace{50pt}
+	\sum^\infty_{t=0} \alpha^2_t(s) < \infty. 
+\end{equation*}
+%% item 2 %%
+\item The noise terms $w_t(s)$ satisfy 
+\begin{align*}
+% line 1
+\mathbb{E}\{ w_t(s) | \mathcal{F}_t \} &= 0, \ \forall \ s, t 
+	\\
+% line 2
+\mathbb{E}\{ w^2_t(s) | \mathcal{F}_t \} &\leq A + B || r_t ||^2, \ \forall \ s, t,
+\end{align*}
+where the expectation is with respect to the MDP dynamics and behaviour policy, $A$ and $B$ are constants, and $|| \cdot ||$ is any given norm on $\mathbb{R}^{|\mathcal{S}|}$.
+%% item 3 %%
+\item There exists a vector $r^*$, a positive vector $\xi$, and a scalar $\beta \in [0,1)$, such that
+\begin{equation*}
+|| H_t r_t - r^* ||_\xi \leq \beta || r_t - r^* ||_\xi, \ \forall \ t,
+\end{equation*}
+where $|| \cdot ||_\xi$ is a weighted maximum norm with weights $\xi$.
+%% item 4 %%
+\item There exists a nonnegative random sequence $\theta_t$ that converges to zero with probability one, and is such that
+\begin{equation}
+|u_t(s)| \leq \theta_t ( ||r_t|_\xi +1 ), \ \forall \ i,t. 
+\end{equation}
+\end{enumerate}
+Then, $r_t$ converges to $r^*$ with probability 1.
+\end{proposition4.5*}
+
+In order to apply proposition 4.5, we need to define a new stochastic approximation algorithm based on the update function of the $n$-step $Q(\sigma)$ algorithm and show that such algorithm satisfies certain conditions.
+For this purpose, we split up the proof into four separate steps. 
+First, we will show that the operator $\Sigma^n_t$ has $q_\pi$ as a fixed point (Lemma 1).
+Second, we will prove that the same operator is a contraction under the maximum norm and $q_\pi$ is its unique fixed point (Lemma 2).
+Third, we show that the variance of estimate of the return, $G_{t, 0:n}$, is bounded (Lemma 3).
+Lastly, we use the operator $\Sigma^n_t$ to define a new stochastic approximation algorithm based on the $n$-step $Q(\sigma)$ update and, using the results from Lemmas (1), (2), and (3), we apply proposition 4.5.
+
+%%%%% q_pi fixed point lemma %%%%%
+\begin{lemma}
+\label{lem:fixedpoint}
+Let $(s_i, a_i )$ be a state-action pair in $\mathcal{S} \times \mathcal{A}$ collected arbitrarily without knowledge of the trajectory $\tau_{t+1}(S_0, A_0)$.
+Additionally, let the operator $\Sigma^n_t$ be defined as in equation (\ref{eq:qsigma_op}) and the action-value function $q_\pi(s_i, a_i)$ be defined as in equation (\ref{eq:qpi}). 
+Then, 
+\begin{equation}
+(\Sigma^n_t q_\pi) (s_i, a_i) = q_\pi(s_i, a_i) \ \forall \ t \geq 0, (s_i,a_i) \in \mathcal{S} \times \mathcal{A}.
+\end{equation}
+In other words, $q_\pi$ is a fixed point of $\Sigma^n_t$.
+\end{lemma}
+
+\begin{proof}
+First, let us denote the $n$-step  $Q(\sigma)$ recursive estimate of the return function evaluated using $q_\pi$ as $\hat{G}^{\pi}_{t, 0:n}(s_i, a_i)$ for some arbitrary state-action pair $(s_i, a_i)$.
+Note that, even though $(s_i, a_i)$ is given, all the subsequent state-action pairs are still random variables since they have not been sampled yet.
+
+We proceed by induction to prove the result of the lemma. 
+For $n = 1$, we have:
+%%% base step %%%
+\begin{align*}
+& (\Sigma^1_t q_\pi)(s_i, a_i) \nonumber \\ 
+	%% line 2
+	& \hspace{5pt} = \mathbb{E}_\mu \Big\{ \hat{G}^{\pi}_{t, 0:1}(s_i, a_i) \ \big|
+    	\mathcal{F}_t \Big\} \nonumber \\
+    %% line 3
+	& \hspace{5pt} = \mathbb{E}_\mu \Big\{R(s_i, a_i)
+    	+ \gamma ( 1-\sigma_{i+1} ) \Big[\sum_{b \in \mathcal{A}} 
+    	\mathbb{I}\{b \neq A_{i+1} \} \pi(b| S_{i+1}) q_\pi(S_{i+1}, b) \Big]  
+        \nonumber \\
+    & \hspace{40pt} 
+    	+ \gamma\Big[ \sigma_{i+1} \rho_{i+1}
+        + (1-\sigma_{i+1} ) \pi(A_{i+1}| S_{i+1}) \Big]
+    	\hat{G}^{\pi}_{t, 1:1}(S_{i+1}, A_{i+1}) \ \big| \mathcal{F}_t \Big\} 
+        \nonumber \\
+    %% line 4
+    & \hspace{5pt} = \mathbb{E}_\mu \Big\{R(s_i, a_i)
+    	+ \gamma (1-\sigma_{i+1} ) \Big[ \sum_{b \in \mathcal{A}} 
+    	\mathbb{I}\{b \neq A_{i+1} \} \pi(b| S_{i+1}) q_\pi(S_{i+1}, b) \Big] 
+        \nonumber \\
+    & \hspace{40pt} 
+        + \gamma \Big[ \sigma_{i+1} \rho_{i+1}
+    	+ (1-\sigma_{i+1} ) \pi(A_{i+1}| S_{i+1}) \Big]
+   		q_\pi(S_{i+1}, A_{i+1}) \ \big| \mathcal{F}_t \Big\} 
+        \nonumber \\ 
+    %% line 5
+    & \hspace{5pt} = r(s_i, a_i)  + \gamma \sum_{s' \in \mathcal{S}} P^{a_i}_{s_i s_{i+1}} 
+    	\sum_{a_{i+1} \in \mathcal{A}} \mu(a_{i+1}| s_{i+1}) \cdot
+    	\nonumber \\
+    & \hspace{20pt} \Big[ \Big( \sigma(s_{i+1}) 
+    	\frac{\pi(a_{i+1}| s_{i+1})}{\mu(a_{i+1}|s_{i+1})} 
+        + (1-\sigma(s_{i+1})) \pi(a_{i+1}| s_{i+1}) \Big) q_\pi(s_{i+1}, a_{i+1}) 
+        \nonumber \\
+    & \hspace{25pt} + (1-\sigma(s_{i+1}))\sum_{b \in \mathcal{A}} 
+    	\mathbb{I}\{b \neq a_{i+1} \} \pi(b| s_{i+1}) q_\pi(s_{i+1},b) \Big] \nonumber \\
+    %% line 6
+    & \hspace{5pt} = r(s_i, a_i) + \gamma \sum_{s_{i+1} \in \mathcal{S}} 
+    	P^{a_i}_{s_i s_{i+1}} 
+    	\Big[ \sigma(s_{i+1}) \sum_{a_{i+1} \in \mathcal{A}} \pi(a_{i+1} |s_{i+1} ) 
+        q_\pi(s_{i+1}, a_{i+1}) 
+        \nonumber \\
+	& \hspace{155pt} 
+    	+ (1-\sigma(s_{i+1}) )\sum_{b \in \mathcal{A}} \pi(b|s_{i+1})
+        q_\pi(s_{i+1},b) \Big] 
+        \nonumber \\
+    %% line 7
+   	& \hspace{5pt} = r(s_i, a_i) + \gamma \sum_{s_{i+1} \in \mathcal{S}} P^{a_i}_{s_i s_{i+1}} 
+    	\sum_{a_{i+1} \in \mathcal{A}} \pi(a_{i+1} |s_{i+1} ) q_\pi(s_{i+1}, a_{i+1} ) 
+   		= q_\pi(s_i, a_i),
+\end{align*}
+%
+where we have used the fact that $q_\pi$ is independent of $\mathcal{F}_t$. 
+This proves the base case for all state-action pairs since $(s_i,a_i)$ was chosen arbitrarily. 
+For the induction step, we assume that:
+%
+\begin{align*}
+(\Sigma^n_t q_\pi)(s_i, a_i) = \mathbb{E}_\mu \{\hat{G}^{\pi}_{t, 0:n}(s_i, a_i) \ \big| 
+	\mathcal{F}_t \} = q_\pi(s_i, a_i) \ \forall \ (s_i,a_i) \in \mathcal{S} \times \mathcal{A}.
+\end{align*}
+%
+Using this assumption we can show that for any arbitrary $(s_i,a_i)$:
+%%% induction step %%%
+\begin{align*}
+& (\Sigma^{n+1}_t q_\pi)(s_i, a_i) 
+	\nonumber \\ 
+	%% line 2
+	& \hspace{10pt} = \mathbb{E}_\mu \Big\{ \hat{G}^{\pi}_{t, 0:n+1}(s_i, a_i) 
+    				\big| \mathcal{F}_t \Big\} 
+                    \nonumber \\
+    %% line 3
+	& \hspace{10pt} = \mathbb{E}_\mu \Big\{R(s_i, a_i)  
+    				\nonumber \\
+    & \hspace{45pt} + \gamma\big[ \sigma_{i+1} \rho_{i+1} 
+    				+ (1-\sigma_{i+1}) \pi(A_{i+1}| S_{i+1})\big] G^{\pi}_{t, 1:n+1}
+                    (S_{i+1}, A_{i+1})  \nonumber \\
+    & \hspace{45pt} + \gamma (1-\sigma_{i+1})\sum_{b \in \mathcal{A}} 
+    				\mathbb{I}\{b \neq A_{i+1} \} 
+    				\pi(b|S_{i+1}) q_\pi(S_{i+1}, b) \big| \mathcal{F}_t \Big\} 
+                    \nonumber \\
+    %% line 4
+	& \hspace{10pt} = r(s_i, a_i) 
+    	+ \gamma \sum_{s' \in \mathcal{S}} P^{a_i}_{s_i s_{i+1}}
+    	\sum_{a_{i+1} \in \mathcal{A}} \mu( a_{i+1}| s_{i+1} ) \cdot
+    	\nonumber \\
+    & \hspace{75pt} 
+    	\Big[\sigma(s_{i+1}) \frac{\pi( a_{i+1} |s_{i+1} )}{\mu( a_{i+1} | s_{i+1} )} 
+		\mathbb{E}_\mu \{ \hat{G}^{\pi}_{t, 1:n+1}( s_{i+1} , a_{i+1} ) 
+		\big| \mathcal{F}_t \}
+		\nonumber \\
+    & \hspace{80pt} 
+    	+ (1-\sigma(s_{i+1})) \pi( a_{i+1} | s_{i+1} ) 
+		\mathbb{E}_\mu \{ \hat{G}^{\pi}_{t, 1:n+1}(s_{i+1} ,a_{i+1}) 
+		\big| \mathcal{F}_t \}
+		\nonumber \\
+    & \hspace{80pt} 
+    	+ (1-\sigma(s_{i+1})\sum_{b \in \mathcal{A}} 
+		\mathbb{I}\{b \neq a_{i+1} \} \pi(b|s_{i+1} ) q_\pi(s_{i+1} , b) \Big] 
+		\nonumber \\
+    %% line 5
+	& \hspace{10pt} = r(s_i, a_i) + \gamma \sum_{s_{i+1} \in \mathcal{S}} P^{a_i}_{s_i s_{i+1} } 
+    	\sum_{a_{i+1} \in \mathcal{A}} \mu(a_{i+1} |s_{i+1} ) \cdot
+    	\nonumber \\
+    & \hspace{75pt} 
+    	\Big[ \sigma(s_{i+1}) \frac{\pi(a_{i+1} |s_{i+1} )}{\mu(a_{i+1} |s_{i+1} )}
+        q_\pi(s_{i+1}, a_{i+1} ) \\
+   	& \hspace{80pt}
+        + (1-\sigma(s_{i+1})) \pi(a_{i+1} |s_{i+1} ) q_\pi(s_{i+1} ,a_{i+1} )
+        \nonumber \\
+    & \hspace{80pt} + (1-\sigma(s_{i+1}))\sum_{b \in \mathcal{A}} \mathbb{I}\{b \neq a' \} 
+    	\pi(b|s_{i+1} ) q_\pi(s_{i+1} , b) \Big] 
+        \nonumber \\
+    %% line 6
+   	& \hspace{10pt} = r(s_i, a_i) + \gamma \sum_{s_{i+1} \in \mathcal{S}} P^{a_i}_{s_i s_{i+1} } 
+    	\sum_{a_{i+1} \in \mathcal{A}} \pi(a_{i+1} |s_{i+1} ) q_\pi(s_{i+1} ,a_{i+1} ) 
+        = q_\pi(s_i, a_i),
+\end{align*}
+%
+where the fourth equality is true by assumption:
+\begin{align*}
+\mathbb{E}_\mu \{\hat{G}^{\pi}_{t, 1:n+1}(s_{i+1}, a_{i+1}) | \mathcal{F}_t\} 
+		= (\Sigma^n_t q_\pi)(s_{i+1}, a_{i+1}) = q_\pi(s_{i+1} ,a_{i+1} ).
+\end{align*}
+%
+This proves the induction step for all $(s_i, a_i) \in \mathcal{S} \times \mathcal{A}$.
+Note that this result holds for any $t \geq 0$, which imply that the result holds for all $(s_i,a_i) \in \mathcal{S} \times \mathcal{a}$ and $t \geq 0$.
+\end{proof}
+
+Now that we have shown that $q_\pi$ is a fixed point of the operator $\Sigma^n_t$ we can use this result to show that $\Sigma^n_t$ is a $\gamma$-contraction under the maximum norm with $q_\pi$ as a unique fixed point.
+
+\begin{lemma}
+\label{lem:contraction}
+Let the operator $\Sigma^n_t$ be defined as in equation (\ref{eq:qsigma_op}) and the action-value function $q_\pi(s, a)$ be defined as in equation (\ref{eq:qpi}).
+Then, 
+\begin{align}
+|| \Sigma^n_t Q_t - q_\pi || \leq \gamma || Q_t - q_\pi || \ \forall \ t, \ \gamma\in[0,1),
+\end{align}
+where $|| \cdot ||$ is the maximum norm over state and action pairs. 
+Furthermore, $q_\pi$ is a unique fixed point of the operator $\Sigma^n_t$.
+\end{lemma}
+
+\begin{proof}
+Let us define two new terms that will make notation more manageable as we proceed with the proof.
+Let 
+$\Delta Q_t(s,a) \overset{.}{=} Q_t(s,a) - q_\pi(s,a)$, 
+be the difference between the estimate and the true action-value function for state-action pair $(s,a)$ at time $t$.
+Similarly, let 
+$\Delta \hat{G}_{t, 0:n}(s,a) \overset{.}{=} \hat{G}_{t, 0:n}(s,a) - \hat{G}^{\pi}_{t, 0:n}(s,a)$, 
+be the difference between the estimate of the return of the $n$-step $Q(\sigma)$ algorithm computed using $Q_t$ and the same estimate computed using $q_\pi$. 
+The rest of the proof proceeds by induction. 
+For the base case, we have
+%
+\begin{align*}
+& || \Sigma^1_t Q_t - q_\pi || = || \Sigma^1_t Q_t - \Sigma^1_t q_\pi || 
+	= \max_{(s_1, a_1)} \big| (\Sigma^1_t Q_t) (s_1, a_1) - (\Sigma^1_t q_\pi) (s_1, a_1) \big|, 
+\end{align*}
+%
+where we have used the result from lemma \ref{lem:fixedpoint} and $(s_1, a_1)$ to indicate this is the first state-action pair in a sequence of transitions. 
+Continuing on, we get
+%
+\begin{align*}
+& \max_{(s_1, a_1)} \big| (\Sigma^1_t Q_t) (s_1, a_1) - (\Sigma^1_t q_\pi) (s_1, a_1) \big| 
+	\\
+%% line 2
+& \hspace{10pt}
+	= \max_{(s_1, a_1)} \big| \gamma \mathbb{E}_\mu \big\{ 
+    \big[ \sigma_{2} \rho_2 + (1 - \sigma_{2}) \pi(A_2 | S_2) \big] 
+    \Delta Q_t(S_2, A_2)
+    \\
+& \hspace{90pt}
+    \sum_{ b \in \mathcal{A} } \mathbb{I}\{ b \neq A_2 \} \pi(b | S_2) \Delta Q_t( S_2, b ) 
+    \ \big| \mathcal{F}_t \big\} \big|
+    \\
+%% line 3
+& \hspace{10pt}
+	= \max_{(s_1, a_1)} \Big| \gamma
+    \sum_{s_2 \in \mathcal{S} } P^{a_1}_{s_1 s_2} \sum_{a_2 \in \mathcal{A} } \mu( a_2 | s_2 ) 
+   	\Big[ \sigma(s_2) \frac{\pi( a_2 | s_2 )}{\mu( a_2 | s_2 )} \Delta Q_t (s_2, a_2) 
+    \\
+& \hspace{180pt}
+    + (1 - \sigma(s_2) ) \sum_{ a_2 \in \mathcal{A} } \pi(a_2 | s_2) \Delta Q_t (s_2, a_2)
+    \Big] \Big|
+    \\ 
+%% line 4
+& \hspace{10pt}
+	= \max_{(s_1, a_1)} \Big| \gamma \sum_{ s_2 \in \mathcal{S} } P^{a_1}_{s_1 s_2} 
+    \sum_{ a_2 \in \mathcal{A} } \pi(a_2 | s_2) \Delta Q_t(s_2, a_2) \Big|
+    \\
+%% line 5
+& \hspace{10pt} 
+	\leq \gamma \max_{(s_2, a_2)} \big| \Delta Q_t(s_2, a_2) \big| = \gamma || Q_t - q_\pi ||,
+\end{align*}
+%
+where the last line follows from the triangle inequality . 
+This proves the base case for all $t \geq 0$ since $Q_0$ is initialized to a finite value.
+For the induction step we assume that:
+%
+\begin{align*}
+|| \Sigma^n_t Q_t - q_\pi ||  & = || \Sigma^n_t Q_t - \Sigma^n_t q_\pi  || 
+    \\
+	&= \max_{(s_1,a_1)} | \mathbb{E} \Big\{ \Delta G^{\sigma_t}_{t, 0:n} (s_1, a_1) \ | \mathcal{F}_t \Big\} 
+    \leq \gamma || Q_t - q_\pi || \ \forall \ t \geq 0.
+\end{align*}
+%
+Using this assumption we can show that:
+%
+\begin{align*}
+& || \Sigma^{n+1}_t Q_t - q_\pi || 
+    \\
+% line 2
+& \hspace{10pt} = 
+    || \Sigma^{n+1}_t Q_t - \Sigma^{n+1}_t q_\pi ||
+	= \max_{(s_1,a_1)} \big| \mathbb{E}_\mu \big\{ \Delta G_{t, 0:n+1} (s_1, a_1) \big| \mathcal{F}_t \big\} \big|
+	\\
+%% line 3
+& \hspace{10pt} =
+	\max_{(s_1, a_1)} \Big| \gamma \mathbb{E}_\mu \Big\{ 
+    \big[ \sigma_{2} \rho_{2} + (1 - \sigma_{2}) \pi(A_2| S_2) \big] 
+    \Delta G_{t, 1:n+1} (S_2, A_2)
+    \\
+& \hspace{90pt}
+	+ (1 - \sigma_{2}) \sum_{b \in \mathcal{A}} \pi( b | S_2 ) 
+    \mathbb{I}\{ b \neq A_2 \} \Delta Q_t ( S_2, A_2 ) 
+    \ \big| \mathcal{F}_t \Big\} \Big| 
+    \\
+%% line 4
+& \hspace{10pt} =
+	\max_{(s_1, a_1)} \Big| \gamma
+    \sum_{s_2 \in \mathcal{S}} P^{a_1}_{s_1 s_2} \sum_{a_2 \in \mathcal{A}} \mu(a_2 | s_2) \cdot
+    \\
+& \hspace{65pt}
+    \Big[ \Big( \sigma(s_2) \frac{\pi( a_2 | s_2 )}{\mu( a_2 | s_2 )}
+    + (1 - \sigma(s_2) ) \pi(a_2 | s_2) \Big) 
+    \mathbb{E}_\mu \big\{\Delta G_{t, 1:n+1}( s_2, a_2 ) \big| \mathcal{F}_t \big\}
+    \\
+& \hspace{75pt}
+	+ (1 - \sigma(s_2) ) \sum_{ b \in \mathcal{A} } \pi(b | s_2)
+    \mathbb{I}\{ b \neq a_2 \} \Delta Q_t (s_2, a_2)
+    \Big]
+    \Big|
+    \\
+%% line 5
+& \hspace{10pt} \leq
+	\gamma \sum_{s_2 \in \mathcal{S}} P^{a_1}_{s_1 s_2} \sum_{a_2 \in \mathcal{A}} \mu(a_2 | s_2)
+    \cdot 
+    \\
+& \hspace{35pt}
+	 \Big[ \Big( \sigma(s_2) \frac{\pi( a_2 | s_2 )}{\mu( a_2 | s_2 )}
+    + (1 - \sigma(s_2) ) \pi(a_2 | s_2) \Big) 
+    \max_{(s_2, a_2)} \big| \mathbb{E}_\mu \big\{ \Delta G_{t, 1:n+1}( s_2, a_2 ) \big| \mathcal{F}_t \big\} \big|
+    \\
+& \hspace{45pt} 
+	(1-\sigma(s_2) ) \sum_{ b \in \mathcal{A} } \pi(b | s_2)
+    \mathbb{I}\{ b \neq a_2 \} \max_{(s_2, a_2)} \big| \Delta Q_t (s_2, a_2) \big|
+	\Big]
+    \\
+%% line 6
+& \hspace{10pt} <
+	\gamma \sum_{s_2 \in \mathcal{S}} P^{a_1}_{s_1 s_2} \sum_{a_2 \in \mathcal{A}} \mu(a_2 | s_2)
+    \cdot 
+    \\
+& \hspace{35pt}
+	 \Big[ \Big( \sigma(s_2) \frac{\pi( a_2 | s_2 )}{\mu( a_2 | s_2 )}
+    + (1 - \sigma(s_2) ) \pi(a_2 | s_2) \Big) 
+     || Q_t - q_\pi ||
+    \\
+& \hspace{45pt} 
+	(1-\sigma(s_2) ) \sum_{ b \in \mathcal{A} } \pi(b | s_2)
+    \mathbb{I}\{ b \neq a_2 \} || Q_t - q_\pi ||
+	\Big]
+    \\
+%% line 7
+& \hspace{10pt} = 
+	\gamma || Q_t - q_\pi ||.
+\end{align*}
+%
+The second inequality holds by assumption:
+%
+\begin{align*}
+%% line 1
+\max_{(s_2, a_2)} \big| \mathbb{E}_\mu \big\{ \Delta G_{t, 1:n+1}( s_2, a_2 )  \big| \mathcal{F}_t \big\} \big| 
+    &= || \Sigma^n_t Q_t - q_\pi || \\
+%% line 2
+&\leq \gamma || Q_t - q_\pi || < || Q_t - q_\pi ||, \ \gamma \in [0 , 1).
+\end{align*}
+%
+This proves the induction step for all $t \geq 0$, and, consequently, proves that the operator $\Sigma^n_t$ is a contraction. 
+The fact that $q_\pi$ is a unique fixed point of the operator $\Sigma^n_t$ follows immediately since, if there was another fixed point, $q' \neq q_\pi$, then:
+%
+\begin{align*}
+|| \Sigma^n q' - q_\pi || &= || q' - q_\pi || >  \gamma || q' - q_\pi ||, \ \gamma \in [0,1)
+\end{align*}
+%
+which contradicts the contraction property. Therefore, $q_\pi$ must be a unique fixed point of the operator $\Sigma^n_t$.
+\end{proof}
+
+Now, we proceed to prove one more result that will be useful for applying proposition 4.5 and for proving the convergence of the update function in equation (\ref{eq:nstep_update}).
+
+\begin{lemma}
+\label{lem:bounded_variance}
+Let $(s_i, a_i)$ be a state-action pair selected arbitrarily from $\mathcal{S} \times \mathcal{A}$ without knowledge of the trajectory $\tau_{t+1}(S_0, A_0)$. 
+Additionally, let $G_{t, 0:n}$ be the estimate of the $n$-step return defined in equation (\ref{eq:recursive_return}), and $\mathcal{F}_t$ be the history of the algorithm at time $t$. 
+Then, 
+\begin{equation*}
+\mathbb{V} \{ G_{t, 0:n}(s_i, a_i) | \mathcal{F}_t \} \leq A + B || Q_t ||^2 \ \forall \ t \geq 0, 
+    (s_i, a_i) \in \mathcal{S} \times \mathcal{A}
+\end{equation*}
+for some finite constants $A$ and $B$, and $|| \cdot ||$ the maximum norm over state-action pairs.
+\end{lemma}
+
+\begin{proof}
+First, note that
+%
+\begin{align*}
+\mathbb{V} \{ G_{t, 0:n}(s_i, a_i) | \mathcal{F}_t \}  &= 
+	\mathbb{E}_\mu \{G_{t, 0:n}(s_i, a_i)^2 | \mathcal{F}_t \}
+    - (\mathbb{E}_\mu \{G_{t, 0:n}(s_i, a_i) | \mathcal{F}_t \} )^2 
+    \\
+& \leq 
+	\mathbb{E}_\mu \{G_{t, 0:n}(s_i, a_i)^2 | \mathcal{F}_t \}.
+\end{align*}
+%
+Hence, we just need to show that $\mathbb{E}_\mu \{G_{t, 0:n}(s_i, a_i)^2 | \mathcal{F}_t \} \leq A + B || Q_t ||^2$.
+We will start by rewriting this expectation in its full form
+%
+\begin{align*}
+& \mathbb{E}_\mu \{G_{t, 0:n}(s_i, a_i)^2 | \mathcal{F}_t \}
+	\\
+%% line 2
+& \hspace{10pt} = 
+	\mathbb{E}_\mu \Big\{ \Big(
+    \sum^{i+n-1}_{k = i} \gamma^{k-i} \Big( \prod^k_{s=i+1} C_{k} \Big) \Big[ R_{k+1} 
+    \\
+& \hspace{55pt}
+	+ \gamma (1 - \sigma_{k+1}) \sum_{a \in \mathcal{S}} \mathbb{I}\{ a \neq A_{k+1} \}
+    \pi(a|S_{k+1}) Q_t(S_{k+1}, a) \Big]
+    \\
+& \hspace{55pt}
+	+ \gamma^n \Big( \prod^{i+n}_{s=i+1} C_{k} \Big) Q_t( S_{i+n}, A_{i+n})
+    \Big)^2 \ \big| \mathcal{F}_t \Big\}, 
+\end{align*}
+%
+where $C_{k} = \sigma_{k} \rho_k + (1 - \sigma_{k}) \pi(A_k | S_k)$.
+Note that by assumption (2) we have that the importance sampling ratio must be bounded above by some finite constant $\rho_M \geq 1$, with equality when $\mu$ and $\pi$ are equal.
+Consequently, we can bound $C_{k}$ by $\rho_M$.
+Moreover, by our model assumptions we know that the reward function is bounded by some constant $R_M$.
+Using these bounds on the importance sampling ratio and the reward, and the fact that $Q_t(S_i, A_i) \leq || Q_t ||$ we can show that
+%
+\begin{align*}
+& \mathbb{E}_\mu \{G_{t, 0:n}(s_i, a_i)^2 | \mathcal{F}_t \}
+	\\
+%% line 2
+& \hspace{10pt} \leq
+	\mathbb{E}_\mu \Big\{ \Big(
+    \sum^{i+n-1}_{k=i} \gamma^{k-i} \Big( \prod^k_{s=i+1} \rho_M \Big) \Big[ R_M    
+	+ \gamma || Q_t || \Big] + \gamma^n \Big( \prod^{i+n}_{s=i+1} \rho_M \Big) || Q_t ||
+    \Big)^2 \ \big| \mathcal{F}_t \Big\}
+	\\
+%% line 3
+& \hspace{10pt} = 
+	\Big(
+    \sum^{i+n-1}_{k=i} \gamma^{k-i} \rho^{k-i}_M  \Big[ R_M    
+	+ \gamma || Q_t || \Big] + \gamma^n \rho^n_M || Q_t ||
+    \Big)^2
+    \\
+%% line 4
+& \hspace{10pt} \leq
+	\Big( \big[R_M + \gamma || Q_t || \big] \Big[\rho^{n-1}_M \cdot \frac{1-\gamma^n}{1-\gamma} \Big]
+    + \gamma^n \rho^n_M || Q_t ||
+    \Big)^2
+    \\
+%% line 5
+& \hspace{10pt} = 
+	\Big(
+	\Big[\rho^{n-1}_M \cdot \frac{1-\gamma^n}{1-\gamma} \Big] R_M 
+    + \Big( \gamma \Big[\rho^{n-1}_M \cdot \frac{1-\gamma^n}{1-\gamma} \Big] + \gamma^n \rho^n_M 
+    \Big) || Q_t ||
+    \Big)^2
+    \\
+%% line 6
+& \hspace{10pt} \leq
+	2 \Big(\Big[\rho^{n-1}_M \cdot \frac{1-\gamma^n}{1-\gamma} \Big] R_M \Big)^2 
+    + 2 \Big( \gamma \Big[\rho^{n-1}_M \cdot \frac{1-\gamma^n}{1-\gamma} \Big] + \gamma^n \rho^n_M 
+    \Big)^2 || Q_t ||^2.
+\end{align*}
+%
+The third line holds because all the terms in the expectation are constants given $\mathcal{F}_t$.
+In the fourth line we replaced $\rho^{k-i}_M$ for $\rho^{n-1}_M$ since for all the terms in the sum $\rho^{k-i}_M \leq \rho^{n-1}_M$ since $\rho_M \geq 1$.
+We have also used the inequality $(a + b)^2 \leq 2a^2 + 2b^2$ in the last line of the equation.
+We get the desired result by letting $A$ be equal to the first term in the last line of the equation above and $B$ be equal to the factor of $||Q_t ||^2$.
+This result applies to all $(s_i, a_i) \in \mathcal{S} \times \mathcal{A}$ because the $(s_i, a_i)$ is assumed to be chosen arbitrarily; it applies to all $t \geq 0$ because because neither of the constants $A$ or $B$ depend on $t$.
+\end{proof}
+
+Using these three lemmas we can now prove our main result.
+
+\begin{proof}[Proof of Theorem 1]
+The first part of the proof consist of rewriting the update function in equation (\ref{eq:nstep_update}) to be of the form of the stochastic approximation algorithm described in proposition 4.5 of \citeauthor{Bertsekas:1996:NP:560669} (\citeyear{Bertsekas:1996:NP:560669}):
+%
+\begin{align}
+Q_{t+1} (S_i, A_i) &= (1 - \alpha_t(S_i, A_i)) Q_t (S_i, A_i) + \alpha_t(S_i, A_i) 
+	\hat{G}_{t, 0:n}(S_i, A_i) 
+    \nonumber \\
+%% line 2
+& = (1 - \alpha_t(S_i, A_i)) Q_t (S_i, A_i) + \alpha_t(S_i, A_i) 
+	\hat{G}_{t, 0:n}(S_i, A_i) 
+    \nonumber \\
+& \hspace{15pt} + \alpha_t(S_i, A_i) \Big[ \big( \Sigma^n_t Q_t \big) (S_i, A_i) 
+	- \big( \Sigma^n_t Q_t \big) (S_i, A_i) \Big]
+	\nonumber \\
+%% line 3
+& = (1 - \alpha_t (S_i, A_i)) Q_t (S_i, A_i) 
+	\nonumber \\
+& \hspace{15pt}
+    + \alpha_t(S_i,A_i) \big[ (H_t Q_t) (S_i, A_i) 
+	+ w_t (S_i, A_i) \big] 
+	\nonumber \\
+%% line 4
+(H_t Q_t) (S_i, A_i) &= (\Sigma^n_t Q_t)(S_i, A_i)
+    \nonumber \\
+%% line 5
+w_t (S_i, A_i) &= \hat{G}_{t, 0:n}(S_i, A_i) - \big( \Sigma^t_n Q_t \big) (S_i, A_i).
+	\nonumber
+\end{align} 
+
+Note that we have used $Q_t$ instead of $r_t$ and we are operating on the set of state-action pairs instead of only the states.
+Now, it suffices to show that the assumptions on $(H_t Q_t)$ and $w_t$ are satisfied in order to be able to apply proposition 4.5.
+We start with the assumptions on the noise term, $w_t$.
+The first assumption requires that $\mathbb{E}_\mu \{ w_t (S_i, A_i) \big| \mathcal{F}_t \} = 0$.
+This is straightforward if we use the definition of $\Sigma^t_n$
+%
+\begin{align*}
+\mathbb{E}_\mu \{ w_t (S_i, A_i) \big| \mathcal{F}_t \} &=
+	\mathbb{E}_\mu \{ \hat{G}_{t, 0:n}(S_i, A_i) 
+    - \mathbb{E}_\mu \{ \hat{G}_{t, 0:n}(S_i, A_i) | \mathcal{F}_t \} \}
+    \\
+%% line 2
+&= \mathbb{E}_\mu \{ \hat{G}_{t, 0:n}(S_i, A_i) | \mathcal{F}_t \} 
+	- \mathbb{E}_\mu \{ \hat{G}_{t, 0:n}(S_i, A_i) | \mathcal{F}_t \} = 0.
+\end{align*}
+%
+The second assumption on $w_t$ requires that for some constants $A$ and $B$
+%
+\begin{equation*}
+\mathbb{E}_\mu \{ w^2_t (S_i, A_i) | \mathcal{F}_t \} \leq A + B || Q_t ||^2.
+\end{equation*}
+%
+Note that, by the definition of the variance, we have
+%
+\begin{align*}
+\mathbb{E}_\mu \{ w^2_t (S_i, A_i) | \mathcal{F}_t \} 
+	&= \mathbb{E}_\mu \big\{ \big( \hat{G}_{t, 0:n}(S_i, A_i) - 
+    \mathbb{E}_\mu \{ \hat{G}_{t, 0:n}(S_i, A_i) | \mathcal{F}_t \} \big)^2 
+    \big| \mathcal{F}_t \big\}
+    \\
+%% line 2
+    &= \mathbb{V} \big\{ \hat{G}_{t, 0:n}(S_i, A_i) \big| \mathcal{F}_t  \big\}
+\end{align*}
+%
+Hence, by lemma (\ref{lem:bounded_variance}) it follows that the second moment of the noise term $w_t$ is bounded by $A + B ||Q_t||^2$ for some constants $A$ and $B$.
+Therefore, the conditions on the noise term, $w_t$, are satisfied. 
+
+The assumption on the operator $(H_t Q_t)$ requires that
+%
+\begin{equation*}
+|| (H_t Q_t) - r^* || \leq \gamma || Q_t - r^* ||, \ \gamma \in [0, 1).
+\end{equation*}
+Consequently, if we let $r^*$ be equal to $q_\pi$ we obtain the desired result from lemma (\ref{lem:contraction}). 
+Our algorithm does not have an additional noise term $u_t$; hence, assumption (4) of the proposition is satisfied by letting $u_t = 0$ for all $t$.
+The rest of the assumptions on the learning rate $\alpha_t$ and the behaviour policy $\mu$ are included in the assumptions of the theorem.
+Consequently, all the assumptions of proposition 4.5 are satisfied, which implies that $Q_t$ converges to $q_\pi$ with probability 1. 
+\end{proof}
+
+This concludes the main result of this section.
+However, there is still some extensions that can be readily applied to the theorem.
+
+The most straightforward extension is modifying the estimate of the return used by the $n$-step $Q(\sigma)$ algorithm. 
+Proposition 4.5 allows for the operator $H_t$ to be a function based on the past history of the algorithm.
+However, except for the estimate of the action-value function $Q_t$, the operator $\Sigma^n_t$ remains mostly fixed.
+
+We can make the algorithm more flexible by making other terms dependent on the past history.
+For example, we can let $\sigma$ be dependent of time in which case we would denote it as $\sigma_t(s)$ for some state $s$.
+In order to allow the same convergence guarantees to apply to this algorithm we would have to impose $\sigma_t(s_i)$ be in the interval $[0,1]$ for all states and time steps.
+Similarly, we can let the back up length parameter depend on $t$ and denote it $n_t$.
+Hence, before sampling a new trajectory in order to compute an update, the algorithm can choose $n_t$ as a function of $\mathcal{F}_t$ in order to trade off between bias and variance.
+The same conditions imposed on $n$ would have to imposed on $n_t$ for every time step in order to preserve the convergence guarantee.
+Lastly, we could allow the behaviour policy depend on the current time and denote it $\mu_t$.
+Yet again, we would have to impose assumption (2) of the theorem on $\mu_t$ for all time steps.
+Additionally, we could store each of these parameters, $\sigma_t$, $n_t$, and $\mu_t$, in $\mathcal{F}_t$  so that they could depend on their own history.
+
+Finally, this result can be apply to convex combinations of several back ups of different length.
+The traditional way to do this is by introducing a parameter $\lambda$ that exponentially weights each different backup depending on their weight.
+This would be equivalent to the forward view of TD algorithms with eligibility traces.
+Hence, updates would be computed base on the sum of several $n$-step $Q(\sigma)$ estimates of the return each weighted by $(1-\lambda)\lambda^n$.
+The only caveat is that we would have to impose on the length of each of the estimates of the return in the sum to be of final value.
+
+All these results are readily available without any major modification to the proof.
+Further extensions such as a convergence proof for the every visit case and for the on-line case could be built upon these results, but they would require a more in-depth and careful analysis.
+The results presented in this section represent a significant first step towards a more general theory of the $n$-step $Q(\sigma)$ algorithm.
+
+There is a special case for which we can show more general convergence guarantees.
+However, we will have to limit th ealgorithmm to the 1-step case.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%% On-Policy Control Case %%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Convergence of On-Policy Control 1-Step Q($\sigma$) Algorithm}
+\label{section:control_conv}
+
+The limitations of the result in the previous section is that they do not apply to the more common cases often used in real applications.
+In applied research, TD methods are often implemented in their on-line and every visit version.
+Moreover, the target policy of algorithms is often allowed to be a function of the current estimates of the action-value function.
+In this section we will show a more general convergence proof of the $Q(\sigma)$ that includes the conditions listed above.
+However, we will still have to impose some limitations on the $Q(\sigma)$ algorithm.
+
+In this section we will study the one-step $Q(\sigma)$ algorithm in the \textit{on-policy} \textit{control} setting. 
+In this case, the agent behaves according to a policy $\pi_t$ derived from the estimates of the action-value function $Q_t$.
+Moreover, updates are computed on-line and on every visit to each state-action pair.
+Convergence in this context implies that, as $t\rightarrow \infty$, $Q_t$ converges to the optimal action-value function
+%
+\begin{equation}
+q_*(s,a) \overset{.}{=} \max_\pi q_\pi(s,a) = r(s,a) + \gamma \max_{(s', a')} q_*(s',a').
+\end{equation}
+%
+We will consider the update function
+\begin{align}
+\label{eq:1step_qsigma}
+% line 1
+Q_{t+1} (S_t, A_t) &\overset{.}{=} \big( 1 - \alpha_t (S_t, A_t) \big) Q_t (S_t, A_t) 
+	\nonumber \\
+% line 2
+& \hspace{15pt} + \alpha_t (S_t, A_t) \Big[ R_{t+1} + \gamma \big( \sigma_t Q_t (S_{t+1},  A_{t+1}) 
+	+ (1-\sigma_t) V_{t+1} \big) \Big],
+\end{align}
+%
+where $V_{t+1} = \sum_{a' \in \mathcal{A}} \pi_t (a'| S_{t+1}) Q_t (S_{t+1}, a')$, $\gamma \in [0,1)$, and $\alpha_t(S',A') = 0$ for all $(S',A') \neq (S_t, A_t)$.
+We will let the parameter $\sigma$ depend on the current state $S_t$ and the current timestep $t$ and we will denote it $\sigma_t = \sigma_t(S_t)$.
+Additionally, if there exist a terminal state in the MDP and $T$ is the time of termination, then $R_{k+1}$ and $Q_t (S_k, A_k)$ are equal to zero for all $k \geq T$.
+Therefore, the stochastic iterative algorithm defined in equation (\ref{eq:1step_qsigma}) is an on-line algorithm and is no longer exclusively defined for the episodic case, such as in the previous section.
+
+Note that in this case $A_{t+1}$ is distributed according to the policy $\pi_t$, which is a policy derived from the current estimates of the action-value function, $Q_t$. 
+We will consider the class of policies that have the following two properties:
+\begin{enumerate}
+\item each possible state and action pair is observed infinitely often, and
+\item the policy is greedy in the limit with respect to $Q_t$ with probability $1$.
+\end{enumerate}
+%
+This class of policies is known in the literature as \textit{Greedy in the Limit with Infinite Exploration} (GLIE) (\cite{Singh2000}).
+An example of this type of policies are $\epsilon$-greed policies with $\epsilon(s) = c / n_t(s)$, where $c \in (0,1)$ and $n_t(s)$ is the number of times state $s$ has been visited up until time $t$. 
+
+Our goal is to show that the estimates of the action-value function computed using the update in equation (\ref{eq:1step_qsigma}) converge to the optimal action-value function $q_*$.
+We will accomplish this by using the GLIE class of policies along with Lemma 1 of \citeauthor{Singh2000} (\citeyear{Singh2000}).
+For completeness, we now state the assumptions and main result of Lemma 1 from \citeauthor{Singh2000} (\citeyear{Singh2000}).
+Note that we have changed the notation of the history from $P_t$ to $\mathcal{F}_t$ to match our notation, the notation for $X$ to $\mathcal{X}$ in order to match our set notation, and the notation of $F_t$ to $H_t$ to avoid any confusions with the history $\mathcal{F}_t$.
+
+\newtheorem*{lemma1*}{Lemma 1 from \citeauthor{Singh2000} (\citeyear{Singh2000})}
+\begin{lemma1*}
+Consider a stochastic process $(\alpha_t, \Delta_t, H_t)$, $t \geq 0$, where $\alpha_t, \Delta_t, H_t: \mathcal{X} \rightarrow \mathbb{R}$ and satisfy the equations 
+\begin{equation}
+\label{eq:lemma1_update}
+\Delta_{t+1} (x) = (1-\alpha_t(x)) \Delta_t (x) + \alpha_t (x) H_t (x), \ x \in \mathcal{X}, \ t= 0,1,2,....
+\end{equation}
+%
+Let $\mathcal{F}_t$ be a sequence of increasing $\sigma$-fields such that $\alpha_0$ and $\Delta_0$ are $\mathcal{F}_0$-measurable and $\alpha_t$, $\Delta_t$, and $H_{t-1}$ are $\mathcal{F}_t$-measurable, $t=0,1,2,....$
+Assume the following hold:
+\begin{enumerate}
+%% item 1
+\item the set $\mathcal{X}$ is finite.
+%% item 2
+\item $0 \leq \alpha_t (x) \leq 1, \ \sum_t \alpha_t(x) = \infty, \ \sum_t \alpha^2_t(x) < \infty$ with probability one. 
+%% item 3
+\item $|| \mathbb{E} \{ H_t( \cdot ) | \mathcal{F}_t \} ||_W \leq k || \Delta_t ||_W + c_t$, where $k \in [0, 1)$ and $c_t$ converges to zero with probability one. 
+%% item 4
+\item $\mathbb{V}\{H_t(x) | \mathcal{F}_t \} \leq K(1 + || \Delta_t ||_W)^2$, where $K$ is some constant.
+\end{enumerate}
+Then, $\Delta_t$ converges to zero with probability one.
+\end{lemma1*}
+
+Note that the results of the lemma apply for some weighted maximum norm $|| \cdot ||_W$ and some expectation operator $\mathbb{E}$.
+For our analysis, we will consider the weighted maximum norm with weights of one, which we will denote $|| \cdot ||$.
+Moreover, we will let the expectation operator $\mathbb{E}$ be defined with respect to the transition dynamics probability and the policy $\pi_t$.
+We continue to state the main result of this section and its proof.
+
+%%% Main Result of this Section %%%
+\begin{theorem}
+The one-step $Q(\sigma)$ update defined in equation (\ref{eq:1step_qsigma}) converges to $q_*$ under the following conditions:
+\begin{enumerate}
+%% item 1
+\item $(s,a) \in \mathcal{S} \times \mathcal{A}$, where $\mathcal{S}$ and $\mathcal{A}$ are finite sets.
+%% item 2
+\item $\alpha_t(s,a) \in [0,1]$, $\sum_{t\geq 0} \alpha_t (s,a) = \infty$, $\sum_{t \geq 0} \alpha^2_t (s,a) < \infty$ with probability one for all $(s, a) \in \mathcal{S} \times \mathcal{A}$.
+%% item 3
+\item The policy is greedy in the limit with infinite exploration.
+%% item 4
+\item $\big| R(s,a) \big| \leq R_M  < \infty \ \forall \ (s,a) \in \mathcal{S} \times \mathcal{A}$.
+%% item 5
+\item $\sigma_t = \sigma_t(S_t) \in [0,1] \ \forall \ s \in \mathcal{S}$. 
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+We start by defining a new stochastic process $(\Delta_t)_{t\geq0}$ by subtracting $q_*$ from both sides of equation (\ref{eq:1step_qsigma})
+%
+\begin{align}
+\label{eq:delta_update}
+% line 1
+\Delta_{t+1} (S_t, A_t) &= (1 - \alpha_t(S_t, A_t)) \Delta_t (S_t, A_t) 
+	+ \alpha_t (S_t, A_t) H_t (S_t, A_t)
+  	\\
+% line 2
+\Delta_t (S_t, A_t) &= Q_t (S_t, A_t) - q_* (S_t, A_t) 
+	\nonumber \\
+% line 3
+H_t(S_t, A_t) &=  R_{t+1} + \gamma (\sigma_{t+1} Q_t (S_{t+1}, A_{t+1})  
+	+ (1-\sigma_{t+1})  V_{t+1}) - q_* (S_t, A_t). \nonumber
+\end{align}
+
+We will let $\mathcal{F}_t$ be an increasing sequence of $\sigma$-fields representing the history of the algorithm as defined in equation (\ref{eq:history}).
+We will extend this history by storing $\sigma_t$ in $\mathcal{F}_t$ for $t \geq 0$. 
+Hence, $\alpha_0$, $\Delta_0$, and $\sigma_0$ are $\mathcal{F}_0$-measurable; and $\alpha_t$, $\Delta_t$, $\sigma_t$, and $H_{t-1}$ are $\mathcal{F}_t$-measurable for $t \geq 1$.
+
+Proving that $Q_t$ converges to $q_*$ as $t \rightarrow \infty$  is equivalent to showing that $\Delta_t$ converges to $0$ as $t \rightarrow \infty$. 
+Consequently, the proof consists on showing that the conditions of Lemma 1 from \citeauthor{Singh2000} (\citeyear{Singh2000}) are satisfied for $\Delta_t$. 
+
+Assumptions one and two of the lemma are satisfied by the corresponding assumptions of the theorem.
+For assumption 3, we need to show that $||\mathbb{E}\{ H_t (\cdot, \cdot) | \mathcal{F}_t \}|| \leq k ||\Delta_t|| + c_t$ where $||.||$ is the maximum norm, $k \in [0,1)$, and $c_t$ goes to $0$ with probability 1. 
+By adding and subtracting $\max_a Q_t(S_t,a)$, using the definition of $q_*$ and the triangle inequality, we can show that
+%
+\begin{align}
+\label{eq:onestep_contraction_equation}
+% line 1
+& ||\mathbb{E}\{H_t (\cdot, \cdot) | \mathcal{F}_t\}|| 
+	\nonumber \\  
+% line 2
+& \hspace{10pt} \leq 
+	|| \mathbb{E}\{R_{t+1} + \gamma \max_{b} Q_{t}(S_{t+1}, b) - q_*(S_t,A_t)
+	| \mathcal{F}_t \}|| 
+    \nonumber \\
+& \hspace{20pt} 
+	+ \gamma || \mathbb{E}\{\sigma_{t+1} Q_t(S_{t+1}, A_{t+1}) + (1-\sigma_{t+1})V_{t+1} 
+	- \max_a Q_{t}(S_{t+1},a) | \mathcal{F}_t \}|| 
+    \nonumber \\
+% line 3
+& \hspace{10pt} = 
+	\gamma || \mathbb{E}\{\max_b Q_t(S_{t+1}, b) - \max_{b'} q_*(S_{t+1}, b') 
+	| \mathcal{F}_t\}|| + c_t 
+    \nonumber \\
+% line 4
+& \hspace{10pt} \leq 
+	\gamma || \mathbb{E} \{ \max_{a'} | Q_t(S_{t+1}, a') -  q_*(S_{t+1}, a')| \ 
+    | \mathcal{F}_t  \} || + c_t 
+    \nonumber \\
+% line 5
+& \hspace{10pt} \leq
+	\gamma || \mathbb{E} \{ \max_{(s', a')} | Q_t(s', a') - q_*(s', a')| \ 
+    | \mathcal{F}_t \} || + c_t
+    \nonumber \\
+% line 6
+& \hspace{10pt} =
+	\gamma \max_{(s', a')} | Q_t(s', a') - q_*(s', a')| + c_t 
+	= \gamma ||\Delta_t|| + c_t,
+\end{align}
+%
+where $c_t = \gamma || \mathbb{E} \{ \sigma_{t+1} Q_t(S_{t+1}, A_{t+1}) + (1-\sigma_{t+1}) V_{t+1} - \max_a Q_t (S_{t+1}, a) | \mathcal{F}_t \} ||$.
+By the finiteness of the MDP and the GLIE assumption, $Q_t(S_{t+1}, A_{t+1})$ and $V_{t+1}$ eventually converge to $\max_a Q_t (S_{t+1}, a)$. 
+Therefore, $c_t$ converges zero with probability one.
+
+Note that we have used twice the fact that $\mathbb{E} \{ X \} \leq  \mathbb{E} \{ Y \}$ for some random variables $X \leq Y$ given that $\mathbb{E} \{ X \}$ and $\mathbb{E} \{ Y \}$ exist.
+However, this result is not straightforward for the second inequality in equation (\ref{eq:onestep_contraction_equation}). 
+Specifically, it is not obvious that
+%
+\begin{equation*}
+| \max_b Q_t(S_{t+1}, b) - \max_{b'} q_*(S_{t+1}, b') |
+	\leq \max_{a'} | Q_t(S_{t+1}, a') - q_*(S_{t+1}, a') |
+\end{equation*}
+%
+For clarity we provide a proof of this inequality. 
+For the case where $b = b'$, then both sides of the equality are equal with some slight change in notation.
+When $b \neq b'$ we assume without loss of generality that $\max_b Q_t(S_{t+1}, b) \geq \max_{b'} q_*(S_{t+1}, b')$.
+Clearly, $\max_{b'} q_* (S_{t+1}, b') \geq q_* (S_{t+1}, b)$.
+Hence, it follows that 
+%
+\begin{align*}
+| \max_b Q_t (S_{t+1}, b) - \max_{b'} q_* (S_{t+1}, b') | 
+	& \leq | \max_b Q_{t} (S_{t+1}, b) - q_* (S_{t+1}, b) |
+    \\
+    & \leq \max_{a'} | Q_t (S_{t+1}, a') - q_* (S_{t+1}, a') |
+\end{align*}
+This proves the inequality and demonstrate that the second inequality in equation (\ref{eq:onestep_contraction_equation}) is true. 
+Therefore, the third assumption of Lemma 1 is satisfied.
+
+Finally, we are left to show that the variance of $H_t(S_t,A_t)$ is bounded. 
+Note that the updates of our algorithm are bounded above by the $Q$-learning update
+\begin{align}
+\label{eq:qlearning_upd}
+Q_{t+1}(S_t, A_t) &= (1-\alpha_t(S_t,A_t)) Q_t(S_t, A_t) 
+	\nonumber \\
+& \hspace{10pt}
+	+ \alpha_t(S_t, A_t) [ R_{t+1} + \max_a Q_t(S_{t+1}, a) ],
+\end{align}
+given that such algorithm is trained following the exact same history $\mathcal{F}_t$.
+Similarly, the updates can be bounded below by using the $Q$-learning update in equation (\ref{eq:qlearning_upd}) with the minimum instead of the maximum operator. 
+Both of these $Q$-learning processes have bounded variance and are known to converge as long as the variance of the reward function is bounded \parencite{Tsitsiklis1994,Jaakkola:1994:CSI:1362288.1362296,Singh2000}.
+Consequently, by assumption (4), the variance of our algorithms is bounded above by the variance of the $\max$ $Q$-learning algorithm and below by the variance of the $\min$ $Q$-learning algorithm.
+Therefore, the fourth assumption of Lemma 1 of \citeauthor{Singh2000} (\citeyear{Singh2000}) is satisfied, which implies $\Delta_t$ converges to $0$ with probability $1$.
+\end{proof}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%% Bias and Variance Analysis %%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Bias and Variance Analysis}
+
+We will finish this chapter by providing some intuition about how to select the value of $\sigma$.
+Specifically, we will study the effect of the parameter $\sigma$ on the bias and variance of the estimate of the return.
+With this goal in mind, we will adopt the MDP formalism specified at the beginning of this chapter and we will consider the estimate of the return from chapter \ref{ch3:qsigma}
+%
+\begin{align}
+\label{eq:recursive_nstep_return_ch4}
+%% line 1
+\hat{G}_{t:t+n}(S_t, A_t) &\overset{.}{=} R_{t+1} + \big[ \sigma_{t+1} + (1-\sigma_{t+1})\pi(A_{t+1}|S_{t+1}) \big]
+	\hat{G}_{t+1:t+n}(S_{t+1}, A_{t+1}) \nonumber \\
+%% line 2
+&\hspace{15pt}
+	+ (1-\sigma_{t+1}) \sum_{a \in \mathcal{A}} \mathbb{I}\{ a \neq A_{t+1} \} \pi(a|S_{t+1}) 
+	Q_{t}(S_{t+1}, a),
+	\nonumber \\
+%% line 3: base case
+\hat{G}_{t+n:t+n} &\overset{.}{=} Q_{t}(S_{t+n}, A_{t+n}),
+\end{align}
+%
+where the estimates of the action-value function are collected at time $t$.
+We will assume that $Q_t$ is completely determined by the history of the algorithm $\mathcal{F}_t$.
+Consequently, the only sources of randomness in the expectation 
+%
+\begin{equation}
+\label{eq:expected_onpolicy_return}
+    \mathbb{E}_\pi \{ \hat{G}_{t:t+n} (S_t, A_t) | \mathcal{F}_t \},
+\end{equation}
+are the policy and the transition dynamics probability function.
+
+In order to simplify our analysis, we will only consider the two extreme cases of the $n$-step $Q(\sigma)$ algorithm: $n$-step Sarsa and $n$-step Tree Backup.
+We will denote the estimate of the return of $n$-step $Q(\sigma)$ with a fixed value of $\sigma$ of one as
+%% sarsa return
+\begin{equation}
+\label{eq:nstep_sarsa_return}
+    \hat{G}^{S}_{t:t+n} \overset{.}{=} R_{t+1} + \gamma \hat{G}^S_{t+1:t+n}(S_{t+1}, A_{t+1}),
+\end{equation}
+%
+which is equivalent to the estimate of the return used in the the $n$-step Sarsa algorithm. 
+On the other hand, we will denote the estimate of the return in equation (\ref{eq:recursive_nstep_return_ch4}) with a fixed value of $\sigma$ of zero as
+%% tree backup return
+\begin{align}
+\label{eq:trebackup_return}
+    \hat{G}^{TB}_{t:t+n} &\overset{.}{=} R_{t+1} + \gamma \pi(A_{t+1}|S_{t+1}) G^{TB}_{t+1:t+n}(S_{t+1}, A_{t+1}) 
+    \nonumber \\
+    & \hspace{15pt}
+        + \gamma \sum_{a \neq A_{t+1}} \pi(a|S_{t+1}) Q_{t}(S_{t+1},a),
+\end{align}
+%
+which corresponds to the $n$-step Tree Backup algorithm.
+
+Given a random variable $X$ with parameterized probability distribution $\mathbb{P}(X|\theta)$ and an estimate $\hat{\theta}$ of the parameter $\theta$ computed using samples from $\mathbb{P}(X|\theta)$, the bias of the estimate $\hat{\theta}$ is defined as:
+%
+\begin{equation*}
+    \text{Bias}(\hat{\theta}) \overset{.}{=} \mathbb{E}_{x|\theta}\{ \hat{\theta} \} - \theta.
+\end{equation*}
+In other words, the bias is the expected value --- with respect to the sampling distribution --- of the difference between the estimate and the true value of the parameter.
+Analogously, we can define the bias of the estimate of the return for a state-action pair $(s,a)$ at time $t$ as
+%% bias of estimate of the return
+\begin{align}
+\label{eq:return_bias}
+    \text{Bias} \big(\hat{G}_{t:t+n}(s, a) \big) &\overset{.}{=} 
+        \mathbb{E}_\pi \{ \hat{G}_{t:t+n}(S_t, A_t) | \mathcal{F}_t, S_t = s, A_t = a \} - q_\pi(s,a) 
+        \nonumber \\
+    & = \mathbb{E}_\pi \{ \hat{G}_{t:t+n}(S_t, A_t)- q_\pi(S_t, A_t)  | \mathcal{F}_t, S_t = s, A_t = a \} 
+\end{align}
+For concreteness, we will omit the dependence on $S_t$ and $A_t$ in the expectation.
+
+Given this bias definition, we can compute the bias for the estimates of the return corresponding to $n$-step Sarsa and Tree Backup.
+For $n$-step Sarsa, the bias of the estimate of the return is
+%% bias of sarsa
+\begin{align}
+\label{eq:sarsa_bias}
+    %% line 1
+    & \text{Bias}\big(  \hat{G}^S_{t:t+n}(s, a)  \big) 
+        \nonumber \\
+    & \hspace{20pt} \overset{.}{=}
+        \mathbb{E}_\pi \{ \hat{G}^S_{t:t+n}(S_t, A_t) - q_\pi (S_t, A_t) | \mathcal{F}_t \} 
+        \nonumber \\
+    %% line 2
+    & \hspace{20pt} =
+        \mathbb{E}_\pi \{ R_{t+1} + \gamma\hat{G}^S_{t+1:t+n}(S_{t+1}, A_{t+1}) 
+        - (R_{t+1} +\gamma q_\pi (S_{t+1}, A_{t+1})) | \mathcal{F}_t \} 
+        \nonumber \\
+    %% line 3
+    & \hspace{20pt} =
+        \gamma \mathbb{E}_\pi \{ \hat{G}^S_{t+1:t+n}(S_{t+1}, A_{t+1}) 
+        -  q_\pi (S_{t+1}, A_{t+1})) | \mathcal{F}_t \} 
+        \nonumber \\
+    %% line 4
+    & \hspace{20pt} 
+        = ... = \gamma^n \mathbb{E}_\pi \{ Q_t(S_{t+n}, A_{t+n}) - q_\pi (S_{t+n}, A_{t+n}) | \mathcal{F}_t \}.
+\end{align}
+%
+Hence, the bias of the $n$-step Sarsa estimate of the return is the expected difference between the estimate of the action-value function and the true value function after $n$ steps into the future weighted by $\gamma^n$.
+In fact, if the episode terminates at a time $k \leq t+n$, then the bias of the estimate of the return es exactly zero --- which should not be surprising since it would effectively be the Monte Carlo estimate.
+
+For $n$-step Tree Backup, the bias term does not reduce to a simple formula like in the case of $n$-step Sarsa. 
+However, we can still gain a lot of insight from it:
+%% bias of tree backup
+\begin{align}
+\label{eq:treebackup_bias}
+    %% line 1
+    & \text{Bias}\big(  \hat{G}^{TB}_{t:t+n}(s, a)  \big) 
+        \nonumber \\
+    & \hspace{20pt} \overset{.}{=}
+        \mathbb{E}_\pi \{ \hat{G}^{TB}_{t:t+n}(S_t, A_t) - q_\pi (S_t, A_t) | \mathcal{F}_t \} 
+        \nonumber \\
+    %% line 2
+    & \hspace{20pt} =
+        \gamma \mathbb{E}_\pi \Big\{
+        \sum_{a \neq A_{t+1}} \pi(a|S_{t+1})  Q_t(S_{t+1}, a)
+        + \pi(A_{t+1}|S_{t+1}) \hat{G}^{TB}_{t+1:t+n}(S_{t+1}, A_{t+1}) 
+        \nonumber \\
+    & \hspace{65pt}
+        - v_\pi (S_{t+1}) | \mathcal{F}_t \Big\} 
+        \nonumber \\
+    %% line 3
+    & \hspace{20pt} =
+        \gamma \mathbb{E}_\pi \Big\{
+        \sum_{a \in \mathcal{A}} \pi(a|S_{t+1}) \big[ \mathbb{I}\{ a \neq A_{t+1} \} Q_t(S_{t+1}, a) 
+        \nonumber \\
+    & \hspace{135pt}
+        + \mathbb{I}\{ a \neq A_{t+1} \}  \hat{G}^{TB}_{t+1:t+n}(S_{t+1}, A_{t+1}) \big]
+        \nonumber \\
+    & \hspace{60pt}
+        - \sum_{a \in \mathcal{A}} \pi(a|S_{t+1}) q_\pi(S_{t+1}, a) | \mathcal{F}_t \Big\} 
+        \nonumber \\
+    %% line 4
+    & \hspace{20pt} =
+        \gamma \mathbb{E}_\pi \Big\{
+        \sum_{a \neq A_{t+1}} \pi(a|S_{t+1}) \big( Q_t(S_{t+1}, a) - q_\pi(S_{t+1}, a) \big)
+        \nonumber \\
+    & \hspace{65pt}
+        + \pi(A_{t+1}|S_{t+1}) \big( \hat{G}^{TB}_{t+1:t+n}(S_{t+1}, A_{t+1}) 
+        - q_\pi(S_{t+1}, A_{t+1}) \big)
+        \Big| \mathcal{F}_t \Big\}.
+        \nonumber \\
+\end{align}
+%
+We can see from the equation above that at each timestep, the bias of the Tree Backup algorithm is a weighted sum between the bias of the alternative action-value functions --- the branches of the tree, and the bias of the next estimate of the return.
+As a consequence, if the branches at a given timestep are less accurate than the rest of the return, then the algorithm is increasing its bias by giving less weight to the rest of the return in favor of the branches.
+
+We can address this issue using the $n$-step $Q(\sigma)$ return from equation (\ref{eq:recursive_nstep_return_ch4}).
+We can write an expression for the bias of the $n$-step $Q(\sigma)$ estimate of the return by using the fourth line in equation (\ref{eq:sarsa_bias}) and the last line of equation (\ref{eq:treebackup_bias}):
+%% n-step Q(sigma) bias
+\begin{align}
+\label{eq:qsigma_bias}
+    %% line 1
+    & \text{Bias}\big(  \hat{G}_{t:t+n}(s, a)  \big) 
+        \nonumber \\
+    & \hspace{20pt} \overset{.}{=}
+        \mathbb{E}_\pi \{ \hat{G}_{t:t+n}(S_t, A_t) - q_\pi (S_t, A_t) | \mathcal{F}_t \} 
+        \nonumber \\
+    %% line 2
+    & \hspace{20pt} =
+        \gamma \mathbb{E}_\pi \Big\{
+        (1-\sigma_{t+1}) \Big[\sum_{a \neq A_{t+1}} \pi(a|S_{t+1}) \big( Q_t(S_{t+1}, a) - q_\pi(S_{t+1}, a) \big)
+        \nonumber \\
+    & \hspace{65pt}
+        + \pi(A_{t+1}|S_{t+1}) \big( \hat{G}_{t+1:t+n}(S_{t+1}, A_{t+1}) 
+        - q_\pi(S_{t+1}, A_{t+1}) \big) \Big]
+        \nonumber \\
+    & \hspace{65pt} + 
+        \sigma_{t+1} \Big[ \hat{G}_{t+1:t+n}(S_{t+1}, A_{t+1}) - q_\pi (S_{t+1}, A_{t+1}) \Big]
+        \Big| \mathcal{F}_t \Big\}.
+        \nonumber \\
+\end{align}
+%
+As it can be seen in the equation above that, if at a particular timestep the branches of the Tree Backup side of the return are too inaccurate, we can choose to set $\sigma_{t+1}$ to be 1 in order to cancel out that side of the return.
+Doing so would effectively reduce the bias of the estimate of the return.
+
+A natural question now arises: if the $n$-step Sarsa return is always unbiased up until the timestep $t+n$, then why would one ever choose a value of $\sigma$ other than one?
+In order to answer that question, we need to understand the how the parameter $\sigma$ affects the variance of the algorithm.
+
+Unfortunately, there is no simple formula that lets us compare the variance of the estimates of the return corresponding to the $n$-step Sarsa and Tree Backup algorithms.
+However, we can gain some intuition by looking at the full expression of the variance of the estimate of the return for each algorithm.
+For the $n$-step Sarsa algorithm, the variance of the return is
+%% variance of sarsa
+\begin{align}
+\label{eq:sarsa_variance}
+    %% line 1
+    & \mathbb{V}\{ \hat{G}^S_{t:t+n}(s, a) | \mathcal{F}_t \} = 
+        \mathbb{V}\{ R_{t+1} + \gamma R_{t+2} + ... + \gamma^n Q_t(S_{t+n}, A_{t+n}) | \mathcal{F}_t \}.
+\end{align}
+Therefore, the variance can be simplified to the variance of each reward term weighted by $\gamma^k$, for $n \geq k \geq 0$, plus the covariance between each reward term and every subsequent reward after that.
+Furthermore, the farther down in time a reward is sampled, the wider the range of values that reward can possibly attain and the higher its contribution to the total variance is.
+
+For the variance of the Tree Backup estimate of the return, we will abuse the notation by letting $\pi_t$ denote $\pi(A_t|S_t)$.
+Using this new notation, the variance can be written as
+%% variance of treebackup
+\begin{align}
+\label{eq:treebackup_variance}
+    %% line 1
+    & \mathbb{V}\{ \hat{G}^{TB}_{t:t+n} (s,a) | \mathcal{F}_t \} 
+        \nonumber \\
+    %% line 2
+    &\hspace{10pt} = 
+        \mathbb{V} \Big\{ R_{t+1} 
+        + \gamma \sum_{a \in \mathcal{A}} \pi(a|S_{t+1}) \big[ 
+            \mathbb{I}\{a \neq A_{t+1} \} Q_t (S_{t+1}, a) + \mathbb{I}\{ a = A_{t+1} \} R_{t+2}
+        \big]
+        \nonumber \\
+    %% line 3
+    &\hspace{40pt} +
+        \gamma^2 \pi_{t+1} \sum_{a \in \mathcal{A}} \pi(a|S_{t+2}) \big[ 
+            \mathbb{I}\{a \neq A_{t+2} \} Q_t (S_{t+2}, a) + \mathbb{I}\{ a = A_{t+2} \} R_{t+3}
+        \big]
+        \nonumber \\
+    %% line 4
+    &\hspace{40pt} +
+        ...
+        \nonumber \\
+    %% line 5
+    & \hspace{40pt} +
+        \gamma^n \Big(\prod^{n-1}_{k=1}\pi_{t+k} \Big)
+        \sum_{a \in \mathcal{A}} \pi(a|S_{t+n}) Q_t(S_{t+n}, a)
+        \big| \mathcal{F}_t \Big\}
+        \nonumber \\
+    % line 6: rewriting the variance
+    & \hspace{10pt} =
+        \mathbb{V} \Big\{ R_{t+1} + \gamma \pi_{t+1} R_{t+2} + ... + \gamma^n \Big(\prod^{n}_{k=1}\pi_{t+k} \Big) Q_t(S_{t+n}, A_{t+n})
+        \nonumber \\
+    %% line 6
+    & \hspace{40pt} +
+        \gamma \sum_{a \neq A_{t+1}} \pi(a|S_{t+1}) Q_t(S_{t+1}, a)
+        \nonumber \\
+    %% line 7
+    & \hspace{40pt}
+        + \gamma^2 \pi_{t+1} \sum_{a \neq A_{t+2}} \pi(a|S_{t+2}) Q_t(S_{t+2}, a)
+        \nonumber \\
+    %% line 7
+    & \hspace{40pt} +
+        ...
+        \nonumber \\
+    %% line 8
+    & \hspace{40pt} +
+        \gamma^n \Big(\prod^{n-1}_{k=1}\pi_{t+k} \Big)  \sum_{a \neq A_{t+n}} 
+        \pi(a|S_{t+n}) Q_t(S_{t+n}, a) \big| \mathcal{F}_t \Big\}
+\end{align}
+%
+As we can observe in the second equality in equation (\ref{eq:treebackup_variance}), the Tree Backup estimate of the return is reweighting the sampled trajectory by the probability of that trajectory.
+The rest of the weights are assigned proportionally to all the altervative action-value functions according to their likelihood.
+As a consequence, if a trajectory is very unlikely, the estimate of the return will assign less weight to the true trajectory in favour of the more likely action-value functions. 
+
+Since the Tree Backup estimate of the return reweights the trajectory at every timestep indiscriminately, it is not clear what is going to be the effect of such reweighting on the bias and the variance of the estimate of the return.
+On the other hand, the $n$-step $Q(\sigma)$ algorithm allows us to be more selective about when to take an expectation and when to sample, which could improve our estimate of the return.
+
+For example, consider the case in which we know the exact action-values of the branches of the tree backup algorithm at some timestep $t + k$, for $ n > k > 3$.
+In such case, we could improve our estimate of the return using the $n$-step $Q(\sigma)$ estimate of the return in the following way
+%% example
+\begin{align}
+\label{eq:example_bias_vs_variance}
+    %% line 1
+    \hat{G}_{t:t+1}(s,a) &= R_{t+1} + \gamma R_{t+2} + \gamma^2 R_{t+3} + ... 
+        \nonumber \\
+    %% line 2
+    & \hspace{10pt}
+        + \gamma^{k} \sum_{a \neq A_{t+k}} \pi(a|S_{t+k}) q_\pi(S_{t+k}, a)
+        + \gamma^{k} \pi(A_{t+k}|S_{t+k}) R_{t+k+1}
+        \nonumber \\
+    %% line 3
+    & \hspace{10pt}
+        + \gamma^{k+1} \pi(A_{t+k}|S_{t+k}) R_{t+k+2}
+        + ... 
+        + \gamma^n \pi(A_{t+k}| S_{t+k}) Q_t( S_{t+n}, A_{t+n}).
+        \nonumber
+\end{align}
+%
+In this case, the bias of the estimate of the return would be less than or equal to the bias of the $n$-step Sarsa estimate --- with equality when $\pi(A_{t+k}|S_{t+k})$ is equal to one.
+Similarly, the variance would be less than or equal to the variance of the $n$-step Sarsa estimate because all the rewards after time $t+k$ would have a smaller than or equal contribution towards the total variance.
+Thus, if we knew how accurate are the estimates of the action-value function, then we could select the value of $\sigma$ that resulted in the smallest bias and variance --- the smallest mean squared error --- at every time step. 
+
+We will bare witness to this effect in the empirical evaluations presented in the next chapter.
+There, we will present an algorithm that decays the value of the parameter $\sigma$ over time, which often results in better performance at every step of training.
+Furthermore, we will show that even a fixed intermediate value of $\sigma$ can also result in better performance than either of the extremes.
+
+% Therefore, the estimate of the return is pushing the value of the sampled trajectories towards the most likely value of the estimate of the return --- the expected value of the estimate of the return.
+% This effectively reduces the variance of the estimate of the return by shrinking the distance between each sampled estimate and the average estimate.
+
+% Since the estimate of the return of the $n$-step Sarsa algorithm does not correct for how unlikely is a sampled trajectory, every possible sample trajectory 
+
+\end{document}

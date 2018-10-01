@@ -1,0 +1,24 @@
+% A workaround to allow relative paths in included subfiles
+% that are to be compiled separately
+% See https://tex.stackexchange.com/questions/153312/subfiles-inside-a-subfile-using-relative-paths
+\providecommand{\main}{..}
+% \documentclass[\main/thesis.tex]{subfiles}
+
+\begin{document}
+
+% environment for preface
+% If you want the preface to not be double-spaced, uncomment the corresponding 
+% setting above.
+\begin{preface}
+Some of the research presented in this thesis was published in 32nd AAAI conference in 2018 on a paper titled "Multi-step reinforcement learning: a unifying algorithm" \parencite{qsigma-paper} and in \citeauthor{sutton2018}'s book draft \parencite{sutton2018}.
+
+Chapter \ref{ch3:qsigma} presents the $n$-step $Q(\sigma)$ algorithm as it was first introduced in \citeauthor{sutton2018} (\citeyear{sutton2018}).
+The second convergence proof in chapter \ref{ch4:convergence} was worked out by me and was first presented in the paper by \citeauthor{qsigma-paper} (\citeyear{qsigma-paper}).
+The first and second experiments in chapter \ref{ch5:empirical_evaluation} were also present in the paper \citeauthor{qsigma-paper} (\citeyear{qsigma-paper}) and were run by my co-authors Kris De Asis and Zach G. Holland, respectively. 
+The third experiment in chapter \ref{ch5:empirical_evaluation} was originally presented in \citeauthor{qsigma-paper} (\citeyear{qsigma-paper}), but in this thesis we present a corrected version of it since there was a bug in the original Mountain Cliff environment.
+I was responsible for this last experiment. 
+This work and the publication "Multi-step reinforcement learning: a unifying algorithm" was led by professor Richard Sutton at the University of Alberta.
+
+\end{preface}
+
+\end{document}

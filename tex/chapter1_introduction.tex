@@ -1,0 +1,82 @@
+% A workaround to allow relative paths in included subfiles
+% that are to be compiled separately
+% See https://tex.stackexchange.com/questions/153312/subfiles-inside-a-subfile-using-relative-paths
+\providecommand{\main}{..}
+% \documentclass[\main/thesis.tex]{subfiles}
+
+\begin{document}
+\chapter{Introduction}
+\label{ch1:introduction}
+
+
+% foreshadowing unification
+% first paragraph TD and RL
+% second TD and bootstrapping, includes dp
+% third action-value methods
+% spectrum 1-step TD methods to monte carlo	% sampling vs bootstrapping
+% unifying spectrum by lambda
+% unifying spectrum by n 
+
+Temporal difference (TD) methods are an important idea in reinforcement learning. 
+Reinforcement learning agents, just like humans, learn by trial and error how to interact with their environment.
+In order to achieve this goal, an agent has to be able to predict a reward signal as a function of a \textit{policy} - a decision rule that maps environment states to agent actions.
+Agents often approach this prediction problem by estimating \textit{value functions} which represent the expected amount of reward attainable given a policy and the current position of the agent in the environment.
+TD methods are crucial to RL because they are capable of producing accurate estimates of the value function as the agent is interacting with its environment.
+
+TD methods are a special kind of prediction method where estimates of the value function are learned from previous estimates, a technique known as \textit{bootstrapping}.
+This is reminiscent of dynamic programming where, given a perfect model of the environment, estimates are learned by bootstrapping off of other estimates.
+Additionally, TD methods are able of learning from raw experiences from the environment without a model of it.
+This is analogous to \textit{Monte Carlo} estimation where estimates can be computed by simulating trajectories of an agent in the environment.
+In this way, TD methods create a flexible framework that combines ideas from dynamic programming and Monte Carlo estimation in order to create powerful algorithms.
+
+\textit{Action-value} methods are a subset of TD methods concerned with estimating \textit{action-value functions}, which represent the expected reward as a function of states, actions, and a policy.
+One of the early breakthroughs in RL was the action-value method, $Q$-learning \parencite{watkins1989qlearn,watkins1992}, which is considered an \textit{off-policy} method because the policy generating the behaviour (the \textit{behaviour policy}) is different from the policy whose value is being learned (the \textit{target policy}).
+Another classical action-value method, Sarsa, was initially proposed as an on-policy method \parencite{rummery1995,sutton1996}, and it was later extended to the off-policy setting via the use of \textit{importance sampling} \parencite{precup2000}. 
+Expected Sarsa is an extension of Sarsa where instead of sampling the next action, an expectation is taken over all the possible actions which has the added benefit of reducing the variance of the estimates \parencite{harm-hado-expected-sarsa}.
+Additionally, Expected Sarsa subsumes $Q$-learning in the case where the optimal policy is used as the target policy.
+
+Sarsa, Expected Sarsa, and $Q$-learning are often introduced in the \textit{one-step} case where \textit{backups} - the information used to compute the update of the action-value function 
+- consist of one sample transition of the next reward, state, and action.
+However, all these algorithms can be extended to the \textit{multi-step} case where the number of transitions in the backup, also known as the length of the backup, can be larger than one \parencite{rummery1995,precup2000,watkins1992}.
+Multi-step methods create an spectrum of algorithms where at one end we have one-step TD methods and at the other end we have Monte Carlo estimation methods.
+
+The classical extension to the multi-step case is illustrated by the TD($\lambda$) algorithm which, through the use of the trace decay parameter $\lambda$, can smoothly shift from one-step TD ($\lambda = 0$) and Monte Carlo Estimation ($\lambda = 1$). 
+Updating estimates in this way is equivalent to using a geometric average of several backups of different lengths each weighted by $(1-\lambda) \lambda^n$, where $n$ is the length of the backup.
+Alternatively, in this work we will consider the $n$\textit{-step} case, a simpler version of the multi-step case where updates are computed using a single backup of length $n$.
+In this setting, the parameter $n$, just like $\lambda$, allows us to shift between one-step TD methods and Monte Carlo methods.
+Moreover, $n$ has an analogous effect to that of $\lambda$: trading off bias for variance as it increases 
+\parencite{Kearns:2000:BEB:648299.755183}.
+
+% Just like the TD($\lambda$) algorithm, which unifies one-step TD methods with Monte Carlo methods through the use of the trace decay parameter $\lambda$ \parencite{sutton1988learning}, Sarsa, Expected Sarsa, and $Q$-learning have analogous extensions to the \textit{multi-step} case \parencite{rummery1995,precup2000,watkins1992}.
+% In multi-step methods updates are computed using backups of length greater than or equal to 1.
+% In the eligibility trace case, such as in TD($\lambda$), updates use a geometric average of several backups of different lengths.
+% We will consider the $n$\textit{-step} case, a simpler version of the multi-step case where, instead of computing updates as an average of several backups, updates are computed based only on one backup of length $n$.
+% In this setting, the parameter $n$, just like $\lambda$, allows us to shift smoothly between one-step TD methods and Monte Carlo methods.
+% Moreover, $n$ has an analogous effect to that of $\lambda$: trading off bias for variance as it increases \parencite{Kearns:2000:BEB:648299.755183}.
+
+Sarsa naturally generalizes to the $n$-step setting by sampling more transitions before computing the update, and it can be extended to the off-policy case through the use of the importance sampling ratio \parencite{sutton2018}.
+For Expected Sarsa, despite there being many ways to generalize it to the $n$-step case, the Tree Backup algorithm seems like a natural generalization since it preserves the most desirable property of Expected Sarsa - it can learn off-policy without importance sampling \parencite{precup2000}.
+The fundamental difference between both algorithms is that Sarsa samples an observation at every step of the backup, whereas Tree Backup takes an expectation over all possible actions.
+Since both algorithms share similar convergence guarantees in the tabular case, it is intuitive to believe that a unification of both of them would also inherit the same convergence properties.
+In chapter \ref{ch2:background}, we will review the one-step and $n$-step versions of these two algorithms.
+
+In this work we study theoretically and empirically a new algorithm called $Q(\sigma)$, which was originally proposed in \citeauthor{precup2000} (\citeyear{precup2000}) as a unification of Tree Backup and off-policy Sarsa.
+$Q(\sigma)$ introduces a new parameter, $\sigma$, which allows us to to smoothly vary the degree of sampling and expectation.
+The parameter $\sigma$ effectively creates a new family of algorithms that lie in a continuum between Sarsa (full sampling, $\sigma = 1$) and Tree Backup (pure expectation, $\sigma = 0$).
+
+Our main contribution is the introduction of the algorithm $n$-step $Q(\sigma)$ along with convergence results and empirical evaluations of the on-policy case in the tabular setting and continuous setting with linear and non-linear function approximations.
+In chapter \ref{ch3:qsigma}, we introduce our new algorithm $n$-step $Q(\sigma)$ and how it can be extended to the function approximation case.
+
+In chapter \ref{ch4:convergence}, we prove the convergence of the $Q(\sigma)$ algorithm in two special cases of the tabular case.
+First, we show the convergence of $n$-step $Q(\sigma)$ in the off-policy policy-evaluation case, where the target policy is stationary and, possibly, different from the behaviour policy.
+Second, we show the convergence of $1$-step $Q(\sigma)$ in the on-policy control case, where the target policy converges to the greedy policy in the limit. 
+
+In chapter \ref{ch5:empirical_evaluation}, we show empirical results of the $n$-step $Q(\sigma)$ algorithm. 
+First, we evaluate $n$-step $Q(\sigma)$ in a 19-step random walk to show the performance of the algorithm at different values $\sigma$ and we introduce a heuristic to decay the value of $\sigma$ over time that shows how $\sigma$ can be varied in order to obtain better performance.
+Second, we evaluate $n$-step $Q(\sigma)$ in the stochastic windy gridworld environment to demonstrate how the parameters $n$, $\sigma$, and the learning rate, $\alpha$, affect the performance of the algorithm.
+Third, we evaluate $Q(\sigma)$ in the mountain cliff environment --- a variant of the Mountain Car environment --- to demonstrate its performance in the continuous case with linear function approximation case.
+Lastly, we implement a similar neural network architecture to the DQN architecture from \citeauthor{mnih2015humanlevel} (\citeyear{mnih2015humanlevel}) to evaluate $n$-step $Q(\sigma)$ in the mountain car environment. 
+Our results in this last experiment demonstrate that the effects found in the tabular and continuous case with linear function approximation can be observed in the continuous case with non-linear function approximation. 
+
+Finally, in chapter \ref{ch6:conclusion}, we conclude this work, summarizing the contributions, discussing extensions that have been made to the $Q(\sigma)$ algorithm since its inception, and considering avenues for future work.
+\end{document}

@@ -1,0 +1,90 @@
+% A workaround to allow relative paths in included subfiles
+% that are to be compiled separately
+% See https://tex.stackexchange.com/questions/153312/subfiles-inside-a-subfile-using-relative-paths
+\providecommand{\main}{..}
+% \documentclass[\main/thesis.tex]{subfiles}
+
+\begin{document}
+
+\chapter{Effects of the Target Network Update Frequency}
+
+In this section we present the summaries of the algorithms trained for the experiment in section \ref{subse:ch5_best_nstep}.
+In that experiment, we trained $4$ different $Q(\sigma)$ agents in the mountain car environment: one agent for each value of $\sigma$ in $\{ 0, 0.5, 1 \}$ and a decaying $\sigma$ agent with a linear decay of $0.002$. 
+All the agents used the deep $Q(\sigma)$ network architecture from section \ref{sec:dqsigman} and were trained with values for the target network update frequency parameter of $500$, $1,000$, and $2,000$.
+The measure of performance was the average return per episode over $500$ episodes --- the entire training period. 
+
+$Q(0)$, $Q(0.5)$, and decaying $\sigma$ with linear decay performed the best with a target network update frequency of $500$ time steps.
+For all these algorithms, increasing the update frequency consistently resulted in worse performance. 
+There was no statistically significant difference between the performance of $Q(1)$ with different target network update frequencies.
+Table \ref{tbl:different_tnetwork_ufreq} shows the results averaged over $100$ independent runs and with corresponding $95\%$ confidence interval.
+
+\begin{table}[htp] 
+\caption[Comparison of the Performance of the Deep $Q(\sigma)$ Network with Different Values of $\sigma$ and the Target Network Update Frequency]{Comparison of the performance of the deep $Q(\sigma)$ network with different values of $\sigma$ and the target network update frequency.
+The results were computed using $100$ independent runs.
+Lower (LB) and upper (UB) 95\% confidence interval bounds computed using a chi-squared distribution are provided to validate the results.
+$Q(0)$, $Q(0.5)$, and decaying $\sigma$ with linear decay performed better using a target network update frequency of $500$.
+}
+\label{tbl:different_tnetwork_ufreq}
+\begin{center}
+\begin{tabular}{lccccc}
+\toprule
+\multicolumn{6}{c}{$Q(1)$, Sarsa} \\
+\bottomrule
+&& \multicolumn{4}{c}{Average Return per Episode} \\
+\cmidrule{3-6}
+$n$ & Update Frequency & Mean & Standard Error & LB & UB \\
+\midrule
+    & 500       & -158.59	& 1.90	& -162.36	& -154.81   \\
+20  & 1,000     & -157.05	& 2.18	& -161.37	& -152.73   \\
+    & 2,000     & -166.82	& 2.90	& -172.57	& -161.07   \\
+\bottomrule
+&&&& \\
+\toprule
+\multicolumn{6}{c}{$Q(0.5)$} \\
+\bottomrule
+&& \multicolumn{4}{c}{Average Return per Episode} \\
+\cmidrule{3-6}
+$n$ & Update Frequency & Mean & Standard Error & LB & UB \\
+\midrule
+    & 500       & -164.32	& 0.37	& -165.06	& -163.58   \\
+20  & 1,000     & -196.79	& 0.77	& -198.32	& -195.26   \\
+    & 2,000     & -257.83	& 1.39	& -260.58	& -255.08   \\
+\bottomrule
+&&&& \\
+\toprule
+\multicolumn{6}{c}{$Q(0)$, Tree Backup} \\
+\bottomrule
+&& \multicolumn{4}{c}{Average Return per Episode} \\
+\cmidrule{3-6}
+$n$ & Update Frequency & Mean & Standard Error & LB & UB \\
+\midrule
+    & 500       & -193.73	& 0.41	& -194.54	& -192.92   \\
+20  & 1,000     & -243.15	& 0.76	& -244.65	& -241.65   \\
+    & 2,000     & -338.62	& 1.55	& -341.7	& -335.54   \\
+\bottomrule
+&&&& \\
+\toprule
+\multicolumn{6}{c}{Decaying $\sigma$ with Linear Decay} \\
+\bottomrule
+&& \multicolumn{4}{c}{Average Return per Episode} \\
+\cmidrule{3-6}
+$n$ & Update Frequency & Mean & Standard Error & LB & UB \\
+\midrule
+    & 500       & -148.46	& 1.96	& -152.35	& -144.56   \\
+20  & 1,000     & -156.97	& 4.05	& -165.00	& -148.94   \\
+    & 2,000     & -178.46	& 6.34	& -191.04	& -165.88   \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+Notice that the only algorithms that benefit from lower update frequencies are those that compute an expectation at every step of the backup.
+Since the estimate of the return used in the loss function is computed using the target network, it is possible that the mismatch in learning between the two networks --- the update and the target network --- is the cause of this drop in performance.
+A possible experiment for testing this hypothesis would be to implement a version of the target and update network in a tabular domain and see how different frequencies affect the performance of the agents in that domain.
+We would expect that even for tabular representations of the action-value function higher update frequencies would result in worse performance.
+
+If this hypothesis turned out to be true, it would imply that these algorithms would benefit from not using a target network at all.
+Nevertheless, more experimentation is needed in more complex environment since the target network was first devised for environments with a high dimensional state space.
+
+
+\end{document}

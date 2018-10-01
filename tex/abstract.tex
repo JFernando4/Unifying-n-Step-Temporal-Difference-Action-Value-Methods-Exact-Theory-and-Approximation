@@ -1,0 +1,51 @@
+% A workaround to allow relative paths in included subfiles
+% that are to be compiled separately
+% See https://tex.stackexchange.com/questions/153312/subfiles-inside-a-subfile-using-relative-paths
+\providecommand{\main}{..}
+% \documentclass[\main/thesis.tex]{subfiles}
+
+\begin{document}
+
+% environment for abstract.
+\begin{abstract}
+
+Unifying seemingly disparate algorithmic ideas to produce better performing algorithms has been a longstanding goal in reinforcement learning.
+As a primary example, the TD($\lambda$) algorithm elegantly unifies temporal difference (TD) methods with Monte Carlo methods through the use of eligibility traces and the trace-decay parameter $\lambda$.
+The same type of unification is achievable with $n$-step algorithms, a simpler version of multi-step TD methods where updates consist of a single backup of length $n$ instead of a geometric average of several backups of different lengths.
+In this work, we present a new $n$-step algorithm $Q(\sigma)$ that unifies two of the existing $n$-step algorithms for estimating action-value functions --- Sarsa and Tree Backup. 
+The fundamental difference between Sarsa and Tree Backup is that the former samples transitions, whereas the latter takes an expectation over all the possible actions.
+We introduce a new parameter $\sigma$ that allows the degree of sampling performed by the algorithm at each step to be continuously varied.
+This effectively creates a new family of algorithms that lie on a continuum between Sarsa (full sampling, $\sigma = 1$) and Tree Backup (pure expectation, $\sigma = 0$).
+Our results show that our new algorithm, $Q(\sigma)$, can perform better than using intermediate values of $\sigma$ instead of any of the extremes.
+Moreover, if we vary $\sigma$ over time, it is possible to obtain an algorithm that outperforms other variants of $Q(\sigma)$ with a fixed $\sigma$ over a variety of tasks.
+
+This work has three main contributions. 
+	First, we introduce our new algorithm, $n$-step $Q(\sigma)$, in the tabular case and its extension to the function approximation case.
+    Second, we prove convergence for $Q(\sigma)$ in two special cases of the tabular case: the off-policy policy evaluation case and the $1$-step control case. The former result can be easily extended to the forward view of eligibility traces, where updates are computed taking a geometric average of backups of different lengths. 
+    Finally, we show
+    % there's a benefit of using Q(\sigma)
+    empirical results on the performance of the $n$-step $Q(\sigma)$ algorithm. 
+    In the tabular case, we show the effects of different values of the parameters $\sigma$, $n$, and the learning rate, $\alpha$, on the performance of our algorithm.
+    In the continuous case with linear function approximation, we compare the best performance of four different variants of $Q(\sigma)$, $\sigma \in \{0,0.5,1\}$ and varying $\sigma$, in the mountain car environment.
+    In the continuous case with non-linear function approximation, we implement an architecture similar to DQN and demonstrate that the effects observed in the linear function approximation case carry over to the non-linear case. 
+    % This work is an elaboration of published work \parencite{qsigma-paper}.
+\end{abstract}
+% first draft:
+% n-step algorithm, limitation since it doesn't necessarily use lambda
+% say n-step instead of multi-step
+% make a stronger point about why is it important to unify 
+% why is it good to unify all of these algorithms
+	% The extreme cases have shortfalls but there's a sweet spot in the middle
+    % what do you mean with unification
+    % claims about sarsa  and expected sarsa are too strong 
+% intermediate values are often better and we have the flexibility of doing that
+% more compelling in general
+
+% second draft:
+% the main thing that the reader wants to know is whether is important
+% takeaway message: every time you use td methods you should be using Q(sigma)
+
+% third draft:
+% explain the n-step 
+
+\end{document}
